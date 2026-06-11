@@ -396,9 +396,10 @@ function renderStep() {
   // tabs
   document.querySelectorAll("#drawer-tabs .tab").forEach((t, i) => t.classList.toggle("active", i === step));
 
-  // info note — shown on all steps after the first (Figma)
+  // info note — always visible under the step tabs (Figma)
   document.getElementById("drawer-note").innerHTML =
-    step > 0 ? `${I.warnCircle} <span>Review all tabs to see complete hazard information.</span>` : "";
+    `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="shrink-0"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.05"/></svg>
+     <span>Review all tabs to see complete hazard information.</span>`;
 
   // footer
   const prev = document.getElementById("drawer-prev");
