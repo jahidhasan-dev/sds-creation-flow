@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ExactSDS — Section 3: Final Hazard Code</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Figtree:wght@500;600&family=Plus+Jakarta+Sans:wght@500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body class="page-dots bg-white min-h-screen">
+
+<header id="app-header"></header>
+
+<div class="flex relative z-[1]">
+  <aside id="app-rail" class="w-[76px] shrink-0 border-r border-[#e2e5e9] bg-white h-[calc(100vh-62px)] sticky top-0"></aside>
+
+  <aside class="w-[222px] shrink-0 border-r border-[#e2e5e9] pt-8 pl-6 pr-4 hidden lg:block">
+    <nav id="app-steps" class="anim-fade-up"></nav>
+  </aside>
+
+  <main class="flex-1 min-w-0 px-6 py-7">
+    <h2 class="text-[20px] font-semibold text-[#0a0b19] anim-fade-up">Section 3: <span class="text-[#5c67f9]">Ingredient Details</span></h2>
+
+    <section class="anim-fade-up delay-1 mt-5 border border-[#e2e5e9] rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col" style="min-height: calc(100vh - 220px);">
+      <div class="nice-scroll flex-1 overflow-y-auto p-6">
+        <h3 class="text-[16px] font-medium text-[#1f1f26]">Final hazard code</h3>
+
+        <div class="relative mt-4 max-w-[480px]">
+          <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#98a2b3]" id="search-ic"></span>
+          <input id="code-input" class="field pl-10" placeholder="Add code (e.g., H301, EUH070, AUH070)" autocomplete="off" />
+        </div>
+
+        <div id="groups" class="space-y-5 mt-6 stagger"></div>
+      </div>
+
+      <div class="border-t border-[#e2e5e9] bg-white px-6 py-4 flex items-center justify-between">
+        <p class="text-[15px]"><span class="font-semibold text-[#1f1f26]" id="chem-count"></span> <span class="text-[#98989b]">· Ready to generate</span></p>
+        <button id="save-btn" class="btn-primary" onclick="saveHazardCode()">Save Hazard Code <span id="flask-ic"></span></button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/common.js"></script>
+<script>
+renderShell({ step: 1, header: "breadcrumb", crumb: "Ingredient Details" });
+document.getElementById("search-ic").innerHTML = I.search;
+document.getElementById("flask-ic").innerHTML = I.flask;
+
+const chems = State.data.chemicals;
+document.getElementById("chem-count").textContent = `${chems.length} chemical${chems.length === 1 ? "" : "s"} added`;
+
+/* Build / restore the combined hazard list */
+let finalCodes = State.data.finalHazard;
+if (!finalCodes || !finalCodes.length) {
+  finalCodes = [];
+  const seen = new Set();
+  chems.forEach((c) =>
+    c.hcodes.forEach((h) => {
+      const key = h.code + "|" + h.text;
+      if (seen.has(key)) return;
+      seen.add(key);
+      finalCodes.push({ ...h, id: uid() });
+    })
+  );
+  // a couple of duplicates kept intentionally to mirror Figma density
+  if (!finalCodes.length) {
+    finalCodes = [
+      { id: uid(), code: "H202", text: HZ_TEXT.explosive, tone: "indigo" },
+      { id: uid(), code: "H202", text: HZ_TEXT.corrosive, tone: "indigo" },
+      { id: uid(), code: "H202", text: HZ_TEXT.fire, tone: "red" },
+      { id: uid(), code: "H202", text: HZ_TEXT.flammable, tone: "green" },
+    ];
+  }
+}
+
+const GROUPS = [
+  { key: "2", title: "Physical hazards (H2xx)", cls: "text-[#3f43af]" },
+  { key: "3", title: "Health hazards (H3xx)", cls: "text-[#b42318]" },
+  { key: "4", title: "Environmental hazards (H4xx)", cls: "text-[#067647]" },
+];
+const groupOf = (code) => {
+  const m = String(code).match(/H(\d)/);
+  return m && ["2", "3", "4"].includes(m[1]) ? m[1] : "2";
+};
+
+function renderGroups() {
+  const host = document.getElementById("groups");
+  host.innerHTML = GROUPS.map((g) => {
+    const items = finalCodes.filter((c) => groupOf(c.code) === g.key);
+    return `
+      <div class="border border-[#e2e5e9] rounded-2xl bg-[#fcfcfd] p-5">
+        <h4 class="text-[16px] font-semibold ${g.cls} mb-4">${g.title}</h4>
+        ${items.length
+          ? `<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              ${items.map((c) => `
+                <div class="code-card bg-white" data-cid="${c.id}">
+                  ${hzBadge(c.code, c.tone)}
+                  <span class="text-[12px] font-medium text-[#727284] leading-4 line-clamp-2">${esc(c.text)}</span>
+                  <span class="x" onclick="removeCode('${c.id}')">${I.x}</span>
+                </div>`).join("")}
+            </div>`
+          : `<p class="text-[13px] text-[#98989b]">No codes in this group.</p>`}
+      </div>`;
+  }).join("");
+}
+
+function removeCode(id) {
+  const card = document.querySelector(`[data-cid="${id}"]`);
+  card.classList.add("removing");
+  setTimeout(() => {
+    finalCodes = finalCodes.filter((c) => c.id !== id);
+    renderGroups();
+  }, 220);
+}
+
+attachCodeSuggest(document.getElementById("code-input"), (code, entry) => {
+  finalCodes.push({ id: uid(), code, text: entry.text, tone: entry.tone });
+  renderGroups();
+  // flash the group the code landed in
+  const added = document.querySelector(`[data-cid="${finalCodes[finalCodes.length - 1].id}"]`);
+  if (added) {
+    added.classList.add("anim-scale-in", "selected");
+    added.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    setTimeout(() => added.classList.remove("selected"), 1400);
+  }
+  toast(`Code ${code} added`, "success");
+});
+
+function saveHazardCode() {
+  const btn = document.getElementById("save-btn");
+  btnBusy(btn, "Saving hazard code…");
+  State.data.finalHazard = finalCodes;
+  State.save();
+  setTimeout(() => {
+    btn.innerHTML = `${I.check} Hazard Code Saved`;
+    toast("Final hazard code saved to your SDS", "success");
+    setTimeout(() => (window.location.href = "section-9.html"), 750);
+  }, 900);
+}
+
+renderGroups();
+</script>
+</body>
+</html>

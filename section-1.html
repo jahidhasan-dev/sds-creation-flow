@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ExactSDS — Section 1: Product Details</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Figtree:wght@500;600&family=Plus+Jakarta+Sans:wght@500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body class="page-dots bg-white min-h-screen">
+
+<header id="app-header"></header>
+
+<div class="flex relative z-[1]">
+  <!-- icon rail -->
+  <aside id="app-rail" class="w-[76px] shrink-0 border-r border-[#e2e5e9] bg-white h-[calc(100vh-62px)] sticky top-0"></aside>
+
+  <!-- stepper -->
+  <aside class="w-[222px] shrink-0 border-r border-[#e2e5e9] pt-8 pl-6 pr-4 hidden lg:block">
+    <nav id="app-steps" class="anim-fade-up"></nav>
+  </aside>
+
+  <!-- main -->
+  <main class="flex-1 min-w-0 px-6 py-7 max-w-[760px]">
+    <div class="anim-fade-up">
+      <h2 class="text-[20px] font-semibold text-[#0a0b19]">Section 1: <span class="text-[#5c67f9]">Product Details</span></h2>
+      <p class="text-[14px] text-[#45454d] mt-1">Enter the basic information about your product and SDS configuration</p>
+    </div>
+
+    <form id="s1-form" class="stagger mt-5 space-y-5" novalidate>
+      <!-- Product Information -->
+      <section class="border border-[#e2e5e9] rounded-2xl bg-[#f8f9fa] p-6">
+        <h3 class="text-[18px] font-semibold text-[#3f43af] mb-5">Product Information</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
+          <div>
+            <label class="lbl" for="productName">Product Name</label>
+            <input id="productName" class="field" placeholder="e.g., XZ-10C" autocomplete="off" />
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="lbl !mb-0" for="companyName">Company Name</label>
+              <button type="button" class="text-[12px] font-medium text-[#344054] hover:text-[#5c67f9] transition-colors flex items-center gap-1" onclick="addCompany()">Add Company <span class="text-[14px] leading-none">+</span></button>
+            </div>
+            <select id="companyName" class="field placeholder">
+              <option value="" disabled selected hidden>e.g., ExactSDS Inc.</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl" for="formulation">Formulation Number / Product Code</label>
+            <input id="formulation" class="field" placeholder="e.g., PC-12345" autocomplete="off" />
+          </div>
+          <div>
+            <label class="lbl" for="versionNumber">Version Number</label>
+            <input id="versionNumber" class="field" placeholder="e.g., 1.0" autocomplete="off" />
+          </div>
+          <div class="md:col-span-2">
+            <label class="lbl" for="synonyms">Synonyms</label>
+            <input id="synonyms" class="field" placeholder="write here..." autocomplete="off" />
+          </div>
+        </div>
+      </section>
+
+      <!-- SDS Configuration -->
+      <section class="border border-[#e2e5e9] rounded-2xl bg-[#f8f9fa] p-6">
+        <h3 class="text-[18px] font-semibold text-[#3f43af] mb-5">SDS Configuration</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
+          <div>
+            <label class="lbl" for="country">Country <span class="text-[#f04438]">*</span></label>
+            <select id="country" class="field placeholder" required>
+              <option value="" disabled selected hidden>Select country</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl" for="language">Language <span class="text-[#f04438]">*</span></label>
+            <select id="language" class="field placeholder" required>
+              <option value="" disabled selected hidden>Select language</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="lbl" for="regulation">Regulation <span class="text-[#f04438]">*</span></label>
+            <select id="regulation" class="field placeholder" required>
+              <option value="" disabled selected hidden>Select regulation standard</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl" for="uses">Uses</label>
+            <textarea id="uses" class="field" placeholder="write here...."></textarea>
+          </div>
+          <div>
+            <label class="lbl" for="emergency">Emergency Contact</label>
+            <textarea id="emergency" class="field" placeholder="write here...."></textarea>
+          </div>
+
+          <!-- hazard choice -->
+          <div class="choice-card" data-hazard="hazardous" onclick="pickHazard(this)">
+            <div class="w-9 h-9 rounded-full bg-[#eef0fe] text-[#5c67f9] flex items-center justify-center shrink-0">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5 2.8 19.5a1 1 0 0 0 .9 1.5h16.6a1 1 0 0 0 .9-1.5L12 2.5Zm0 6.5c.6 0 1 .4 1 1v3.5a1 1 0 1 1-2 0V10c0-.6.4-1 1-1Zm0 9.2a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Z"/></svg>
+            </div>
+            <div>
+              <p class="text-[15px] font-semibold text-[#1f1f26]">Hazardous Product</p>
+              <p class="text-[12px] text-[#727284]">Contains hazardous materials</p>
+            </div>
+            <span class="ring"><i></i></span>
+          </div>
+          <div class="choice-card" data-hazard="non-hazardous" onclick="pickHazard(this)">
+            <div class="w-9 h-9 rounded-full bg-[#e8f1fe] text-[#2970ff] flex items-center justify-center shrink-0">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4 5.5V11c0 5 3.4 9.4 8 10.5 4.6-1.1 8-5.5 8-10.5V5.5L12 2Zm-1.2 13.7-3-3 1.4-1.4 1.6 1.6 4-4.3 1.5 1.4-5.5 5.7Z"/></svg>
+            </div>
+            <div>
+              <p class="text-[15px] font-semibold text-[#1f1f26]">Non-Hazardous Product</p>
+              <p class="text-[12px] text-[#727284]">Safe materials only</p>
+            </div>
+            <span class="ring"><i></i></span>
+          </div>
+        </div>
+
+        <button type="submit" id="s1-save" class="btn-primary w-full mt-6 !py-3 text-[16px]">Save &amp; Continue</button>
+      </section>
+    </form>
+  </main>
+
+  <!-- tutorial -->
+  <aside class="w-[360px] shrink-0 px-6 py-7 hidden xl:block">
+    <div id="app-tutorial"></div>
+  </aside>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/common.js"></script>
+<script>
+renderShell({ step: 0, header: "breadcrumb", crumb: "Product Details", tutorial: "1" });
+
+// populate selects
+function fillSelect(id, items, selected) {
+  const el = document.getElementById(id);
+  items.forEach((v) => {
+    const o = document.createElement("option");
+    o.value = o.textContent = v;
+    if (v === selected) o.selected = true;
+    el.appendChild(o);
+  });
+  el.classList.toggle("placeholder", !el.value);
+  el.addEventListener("change", () => el.classList.remove("placeholder"));
+}
+const s1 = State.data.section1;
+fillSelect("companyName", COMPANIES, s1.company);
+fillSelect("country", COUNTRIES, s1.country);
+fillSelect("language", LANGUAGES, s1.language);
+fillSelect("regulation", REGULATIONS, s1.regulation);
+
+// restore saved values
+["productName","formulation","versionNumber","synonyms","uses","emergency"].forEach((id) => {
+  if (s1[id]) document.getElementById(id).value = s1[id];
+});
+if (s1.hazard) {
+  const card = document.querySelector(`[data-hazard="${s1.hazard}"]`);
+  card && card.classList.add("selected");
+}
+
+function pickHazard(el) {
+  document.querySelectorAll(".choice-card").forEach((c) => c.classList.remove("selected"));
+  el.classList.add("selected");
+}
+
+function addCompany() {
+  const ov = openOverlay(`
+    <div class="modal bg-white rounded-2xl shadow-2xl w-[420px] p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-[18px] font-medium text-[#1f1f26]">Add Company</h3>
+        <button class="icon-btn" onclick="closeOverlay(this.closest('.overlay'))">${I.x}</button>
+      </div>
+      <label class="lbl">Company Name</label>
+      <input id="new-company" class="field" placeholder="e.g., ExactSDS Inc." />
+      <button class="btn-primary w-full mt-5" onclick="saveCompany(this)">Add Company</button>
+    </div>`);
+  setTimeout(() => ov.querySelector("#new-company").focus(), 80);
+}
+function saveCompany(btn) {
+  const input = document.getElementById("new-company");
+  const name = input.value.trim();
+  if (!name) { input.classList.add("field-error"); input.focus(); return; }
+  const sel = document.getElementById("companyName");
+  const o = document.createElement("option");
+  o.value = o.textContent = name; o.selected = true;
+  sel.appendChild(o);
+  sel.classList.remove("placeholder");
+  closeOverlay(btn.closest(".overlay"));
+  toast(`Company “${name}” added`, "success");
+}
+
+document.getElementById("s1-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  // validate requireds
+  let ok = true;
+  ["country","language","regulation"].forEach((id) => {
+    const el = document.getElementById(id);
+    el.classList.toggle("field-error", !el.value);
+    if (!el.value) ok = false;
+  });
+  const pn = document.getElementById("productName");
+  pn.classList.toggle("field-error", !pn.value.trim());
+  if (!pn.value.trim()) ok = false;
+  if (!document.querySelector(".choice-card.selected")) {
+    toast("Please choose Hazardous or Non-Hazardous", "warn");
+    ok = false;
+  }
+  if (!ok) { toast("Please fill in the required fields", "warn"); return; }
+
+  Object.assign(State.data.section1, {
+    productName: pn.value.trim(),
+    company: document.getElementById("companyName").value,
+    formulation: document.getElementById("formulation").value,
+    versionNumber: document.getElementById("versionNumber").value,
+    synonyms: document.getElementById("synonyms").value,
+    country: document.getElementById("country").value,
+    language: document.getElementById("language").value,
+    regulation: document.getElementById("regulation").value,
+    uses: document.getElementById("uses").value,
+    emergency: document.getElementById("emergency").value,
+    hazard: document.querySelector(".choice-card.selected").dataset.hazard,
+  });
+  State.save();
+
+  const btn = document.getElementById("s1-save");
+  btnBusy(btn, "Saving…");
+  setTimeout(() => {
+    btn.innerHTML = `${I.check} Saved`;
+    toast("Section 1 saved — 1 SDS credit deducted", "success");
+    setTimeout(() => (window.location.href = "section-3.html"), 650);
+  }, 900);
+});
+
+// clear error state on interaction
+document.querySelectorAll(".field").forEach((f) =>
+  f.addEventListener("input", () => f.classList.remove("field-error"))
+);
+</script>
+</body>
+</html>

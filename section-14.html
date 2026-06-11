@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ExactSDS — Section 14: Transport Information</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Figtree:wght@500;600&family=Plus+Jakarta+Sans:wght@500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body class="page-dots bg-white min-h-screen">
+
+<header id="app-header"></header>
+
+<div class="flex relative z-[1]">
+  <aside id="app-rail" class="w-[76px] shrink-0 border-r border-[#e2e5e9] bg-white h-[calc(100vh-62px)] sticky top-0"></aside>
+
+  <aside class="w-[222px] shrink-0 border-r border-[#e2e5e9] pt-8 pl-6 pr-4 hidden lg:block">
+    <nav id="app-steps" class="anim-fade-up"></nav>
+  </aside>
+
+  <main class="flex-1 min-w-0 px-6 py-7 max-w-[760px]">
+    <p class="text-[11px] text-[#727284] anim-fade-up">Dashboard&nbsp; &gt; Physical Properties</p>
+    <div class="anim-fade-up mt-3">
+      <h2 class="text-[20px] font-semibold text-[#0a0b19]">Section 14: <span class="text-[#5c67f9]">Transport Information</span></h2>
+      <p class="text-[14px] text-[#45454d] mt-1">Enter the Transport Information about your product and SDS configuration</p>
+    </div>
+
+    <div class="anim-fade-up delay-1 mt-5 flex items-center justify-between gap-4">
+      <p class="text-[15px] text-[#1f1f26]">This Substance/Mixture is not classified as Dangerous for Transport.</p>
+      <label class="switch">
+        <input type="checkbox" id="not-dangerous" />
+        <span class="track"></span><span class="thumb"></span>
+      </label>
+    </div>
+
+    <form id="s14-form" class="stagger mt-4 space-y-5" novalidate>
+      <section id="card-un" class="border border-[#e2e5e9] rounded-2xl bg-[#f8f9fa] p-6 transition-opacity duration-300">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
+          <div>
+            <label class="lbl" for="unid">UN/ID Number</label>
+            <div class="relative">
+              <input id="unid" class="field pr-11" placeholder="e.g,1090" autocomplete="off" />
+              <button type="button" class="absolute right-1.5 top-1/2 -translate-y-1/2 icon-btn !p-2 border border-[#e2e5e9] rounded-full bg-white" onclick="lookupUN()" title="Search UN database"><span id="search-ic"></span></button>
+            </div>
+          </div>
+          <div>
+            <label class="lbl" for="classdiv">Class or Division</label>
+            <input id="classdiv" class="field" placeholder="e.g., 1.1D" autocomplete="off" />
+          </div>
+          <div class="md:col-span-2">
+            <label class="lbl" for="shipping">Shipping Name</label>
+            <input id="shipping" class="field" placeholder="CHARGES, DEPTH†" autocomplete="off" />
+          </div>
+        </div>
+      </section>
+
+      <section id="card-transport" class="border border-[#e2e5e9] rounded-2xl bg-[#f8f9fa] p-6 transition-opacity duration-300">
+        <h3 class="text-[18px] font-semibold text-[#3f43af]">Transport Information</h3>
+        <p class="text-[13px] text-[#45454d] mt-0.5 mb-5">Configure transport modes and regulations for your product</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
+          <div>
+            <label class="lbl" for="subrisk">Sub Risk</label>
+            <textarea id="subrisk" class="field" placeholder="Enter sub risk info...."></textarea>
+          </div>
+          <div>
+            <label class="lbl" for="packing">Packaging Group</label>
+            <textarea id="packing" class="field" placeholder="Enter packaging group info....."></textarea>
+          </div>
+          <div class="md:col-span-2">
+            <label class="lbl" for="mode">Transport Mode</label>
+            <select id="mode" class="field placeholder">
+              <option value="" disabled selected hidden>Select Transport Mode...</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" id="s14-save" class="btn-primary w-full mt-6 !py-3 text-[16px]">Generate SDS <span id="file-ic"></span></button>
+      </section>
+    </form>
+  </main>
+
+  <aside class="w-[360px] shrink-0 px-6 py-7 hidden xl:block">
+    <div id="app-tutorial"></div>
+  </aside>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/common.js"></script>
+<script>
+renderShell({ step: 3, header: "welcome", tutorial: "14" });
+document.getElementById("search-ic").innerHTML = I.search;
+document.getElementById("file-ic").innerHTML = I.fileText;
+
+const s14 = State.data.section14;
+["unid", "classdiv", "shipping", "subrisk", "packing"].forEach((id) => { if (s14[id]) document.getElementById(id).value = s14[id]; });
+
+const mode = document.getElementById("mode");
+TRANSPORT_MODES.forEach((m) => {
+  const o = document.createElement("option");
+  o.value = o.textContent = m;
+  if (m === s14.mode) o.selected = true;
+  mode.appendChild(o);
+});
+mode.classList.toggle("placeholder", !mode.value);
+mode.addEventListener("change", () => mode.classList.remove("placeholder"));
+
+/* not-dangerous toggle disables transport fields */
+const toggle = document.getElementById("not-dangerous");
+toggle.checked = !!s14.notDangerous;
+function applyToggle(animate) {
+  const off = toggle.checked;
+  ["card-un", "card-transport"].forEach((id) => {
+    const card = document.getElementById(id);
+    card.style.opacity = off ? ".45" : "1";
+    card.querySelectorAll("input, textarea, select, button:not(#s14-save)").forEach((el) => (el.disabled = off));
+  });
+  if (animate) toast(off ? "Marked as not dangerous for transport — fields disabled" : "Transport classification re-enabled");
+}
+toggle.addEventListener("change", () => applyToggle(true));
+applyToggle(false);
+
+/* UN lookup */
+function lookupUN() {
+  const el = document.getElementById("unid");
+  const q = el.value.trim();
+  if (!q) { el.classList.add("field-error"); el.focus(); return; }
+  const btn = el.parentElement.querySelector("button");
+  btn.innerHTML = Loader.diamond("sm");
+  setTimeout(() => {
+    btn.innerHTML = `<span>${I.search}</span>`;
+    const hit = UN_DB[q];
+    if (!hit) { toast(`No UN entry found for “${q}” — try 1090, 1830, 1789 or 1824`, "warn"); return; }
+    const cd = document.getElementById("classdiv");
+    const sh = document.getElementById("shipping");
+    const pk = document.getElementById("packing");
+    cd.value = hit.classDiv; sh.value = hit.shipping;
+    if (!pk.value) pk.value = `Packing Group ${hit.packing}`;
+    [cd, sh].forEach((f) => { f.style.transition = "background .4s"; f.style.background = "#f0f0ff"; setTimeout(() => (f.style.background = ""), 700); });
+    toast(`UN ${q} — ${hit.shipping} (Class ${hit.classDiv})`, "success");
+  }, 800);
+}
+document.getElementById("unid").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); lookupUN(); } });
+
+/* generate SDS */
+document.getElementById("s14-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  Object.assign(State.data.section14, {
+    unid: document.getElementById("unid").value,
+    classdiv: document.getElementById("classdiv").value,
+    shipping: document.getElementById("shipping").value,
+    subrisk: document.getElementById("subrisk").value,
+    packing: document.getElementById("packing").value,
+    mode: mode.value,
+    notDangerous: toggle.checked,
+  });
+  State.save();
+  runGeneration();
+});
+
+const GEN_STEPS = [
+  { label: "Compiling sections 1–16", icon: I.doc },
+  { label: "Applying GHS classification rules", icon: I.shield },
+  { label: "Building hazard & precautionary statements", icon: I.warn },
+  { label: "Rendering PDF with company branding", icon: I.fileText },
+];
+
+const FLASK_SVG = `
+  <svg class="gen-flask" width="92" height="100" viewBox="0 0 92 100" fill="none">
+    <path d="M37 12h18v22l16.5 38.5A10 10 0 0 1 62.3 86H29.7a10 10 0 0 1-9.2-13.5L37 34V12Z" fill="#fff" stroke="#5c67f9" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M33 12h26" stroke="#5c67f9" stroke-width="3" stroke-linecap="round"/>
+    <g class="liquid">
+      <path d="M28.5 58h35l8 18.5A6.5 6.5 0 0 1 65.5 84h-39a6.5 6.5 0 0 1-6-7.5L28.5 58Z" fill="#8b93fb"/>
+      <path d="M28.5 58c5-2.5 9 2.5 14 0s9 2.5 13.5 0 7.5 2 7.5 2l.5 1h-36l.5-3Z" fill="#aab0fd"/>
+    </g>
+    <circle class="bubble" cx="40" cy="70" r="3.4" fill="#fff" opacity=".9"/>
+    <circle class="bubble b2" cx="52" cy="74" r="2.6" fill="#fff" opacity=".9"/>
+    <circle class="bubble b3" cx="46" cy="68" r="2" fill="#fff" opacity=".9"/>
+    <circle class="bubble b4" cx="58" cy="71" r="1.8" fill="#fff" opacity=".9"/>
+    <circle cx="14" cy="26" r="4" fill="#f7c948"/>
+    <circle cx="80" cy="18" r="3" fill="#f63d68"/>
+    <circle cx="84" cy="38" r="2.6" fill="#12b76a"/>
+    <path d="M72 6v8M68 10h8" stroke="#5c67f9" stroke-width="2.4" stroke-linecap="round"/>
+  </svg>`;
+
+function runGeneration() {
+  const s1 = State.data.section1;
+  const screen = document.createElement("div");
+  screen.className = "gen-screen";
+  screen.innerHTML = `
+    <div class="gen-card">
+      <div class="flex justify-center anim-pop">${FLASK_SVG}</div>
+      <h3 class="text-[26px] font-bold text-[#1f1f26] mt-5 anim-fade-up">Generating your SDS</h3>
+      <p class="text-[14px] text-[#727284] mt-1.5 anim-fade-up delay-1">
+        <span class="font-semibold text-[#3f43af]">${esc(s1.productName || "Untitled Product")}</span>
+        &nbsp;·&nbsp; ${esc(s1.regulation || "GHS (Rev. 9)")} &nbsp;·&nbsp; ${esc(s1.language || "English")}
+      </p>
+      <div class="flex items-center gap-3 mt-7 anim-fade-up delay-2">
+        <div class="gen-progress flex-1"><i id="gen-bar"></i></div>
+        <span class="text-[14px] font-semibold text-[#5c67f9] w-[42px] text-right" id="gen-pct">0%</span>
+      </div>
+      <div class="space-y-2.5 mt-6 anim-fade-up delay-3" id="gen-steps">
+        ${GEN_STEPS.map((s, i) => `
+          <div class="gstep" id="gen-step-${i}">
+            <span class="st-icon" id="gen-ic-${i}">${s.icon}</span>
+            <span class="text-[14px] font-medium text-[#45454d]">${s.label}</span>
+            <span class="ml-auto text-[#5c67f9] hidden" id="gen-ld-${i}">${Loader.dots()}</span>
+          </div>`).join("")}
+      </div>
+    </div>`;
+  document.body.appendChild(screen);
+  document.body.style.overflow = "hidden";
+
+  // smooth % counter
+  let pct = 0, target = 0;
+  const bar = document.getElementById("gen-bar");
+  const pctEl = document.getElementById("gen-pct");
+  const counter = setInterval(() => {
+    if (pct < target) { pct = Math.min(pct + 1, target); pctEl.textContent = pct + "%"; bar.style.width = pct + "%"; }
+  }, 28);
+
+  let i = 0;
+  const advance = () => {
+    if (i > 0) {
+      const prev = document.getElementById(`gen-step-${i - 1}`);
+      prev.classList.remove("on"); prev.classList.add("done");
+      document.getElementById(`gen-ld-${i - 1}`).classList.add("hidden");
+      document.getElementById(`gen-ic-${i - 1}`).innerHTML = I.check;
+    }
+    if (i >= GEN_STEPS.length) {
+      target = 100;
+      setTimeout(() => { clearInterval(counter); showSuccess(screen); }, 900);
+      return;
+    }
+    document.getElementById(`gen-step-${i}`).classList.add("on");
+    document.getElementById(`gen-ld-${i}`).classList.remove("hidden");
+    target = Math.round(((i + 1) / GEN_STEPS.length) * 92);
+    i++;
+    setTimeout(advance, 1150);
+  };
+  setTimeout(advance, 500);
+}
+
+function showSuccess(screen) {
+  const s1 = State.data.section1;
+  const card = screen.querySelector(".gen-card");
+  card.style.transition = "opacity .3s, transform .3s";
+  card.style.opacity = 0; card.style.transform = "scale(.96)";
+  setTimeout(() => {
+    card.innerHTML = `
+      <div class="relative bg-white border border-[#e2e5e9] rounded-3xl shadow-[0_24px_70px_rgba(63,67,175,.16)] px-9 pt-10 pb-8 anim-scale-in overflow-hidden">
+        <div id="confetti-zone" class="absolute inset-x-0 top-0 h-0"></div>
+        <div class="w-[78px] h-[78px] rounded-full bg-[#ecfdf3] text-[#12b76a] flex items-center justify-center mx-auto anim-pop ring-8 ring-[#f3fdf7]">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4.5 4.5L19 7" style="stroke-dasharray:48; animation: checkDraw .55s .2s ease both"/></svg>
+        </div>
+        <h3 class="text-[24px] font-bold text-[#1f1f26] mt-5">SDS Generated Successfully!</h3>
+        <p class="text-[14px] text-[#45454d] mt-2 leading-5">Your GHS-compliant Safety Data Sheet for<br/><b>${esc(s1.productName || "Untitled Product")}</b> is ready to download.</p>
+        <div class="border border-[#e2e5e9] rounded-2xl bg-[#f8f9fa] p-5 mt-6 text-left grid grid-cols-2 gap-x-6 gap-y-2.5 text-[13.5px]">
+          <span class="text-[#727284]">Chemicals</span><span class="font-semibold text-[#1f1f26] text-right">${State.data.chemicals.length}</span>
+          <span class="text-[#727284]">Mixture state</span><span class="font-semibold text-[#1f1f26] text-right">${esc(State.data.mixtureState || "—")}</span>
+          <span class="text-[#727284]">Hazard codes</span><span class="font-semibold text-[#1f1f26] text-right">${(State.data.finalHazard || []).length || "—"}</span>
+          <span class="text-[#727284]">Language</span><span class="font-semibold text-[#1f1f26] text-right">${esc(s1.language || "English")}</span>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mt-7">
+          <button class="btn-secondary !py-3" onclick="startNew()">Start New SDS</button>
+          <button class="btn-primary !py-3" onclick="fakeDownload(this)">${I.fileText} Download PDF</button>
+        </div>
+        <button class="text-[13px] text-[#98a2b3] hover:text-[#5c67f9] transition-colors mt-4" onclick="location.href='dashboard.html'">Back to Dashboard</button>
+      </div>`;
+    card.style.opacity = 1; card.style.transform = "none";
+    // confetti burst
+    const zone = card.querySelector("#confetti-zone");
+    const colors = ["#5c67f9", "#f7c948", "#12b76a", "#f63d68", "#8b93fb", "#f5a623"];
+    for (let n = 0; n < 34; n++) {
+      const bit = document.createElement("span");
+      bit.className = "confetti-bit";
+      bit.style.cssText = `left:${4 + Math.random() * 92}%; background:${colors[n % colors.length]}; animation-delay:${Math.random() * 0.6}s; animation-duration:${1.1 + Math.random() * 0.8}s; transform: rotate(${Math.random() * 180}deg)`;
+      zone.appendChild(bit);
+    }
+  }, 320);
+}
+
+function fakeDownload(btn) {
+  const restore = btnBusy(btn, "Preparing PDF…");
+  setTimeout(() => { restore(); toast("Demo: PDF download would start here", "success"); }, 1100);
+}
+
+function startNew() {
+  State.reset();
+  toast("Demo reset — starting a fresh SDS", "success");
+  setTimeout(() => (window.location.href = "dashboard.html"), 600);
+}
+</script>
+</body>
+</html>

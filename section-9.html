@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ExactSDS — Section 9: Physical Properties</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Figtree:wght@500;600&family=Plus+Jakarta+Sans:wght@500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body class="page-dots bg-white min-h-screen">
+
+<header id="app-header"></header>
+
+<div class="flex relative z-[1]">
+  <aside id="app-rail" class="w-[76px] shrink-0 border-r border-[#e2e5e9] bg-white h-[calc(100vh-62px)] sticky top-0"></aside>
+
+  <aside class="w-[222px] shrink-0 border-r border-[#e2e5e9] pt-8 pl-6 pr-4 hidden lg:block">
+    <nav id="app-steps" class="anim-fade-up"></nav>
+  </aside>
+
+  <main class="flex-1 min-w-0 px-6 py-7 max-w-[760px]">
+    <p class="text-[11px] text-[#727284] anim-fade-up">Dashboard&nbsp; &gt; Physical Properties</p>
+    <div class="anim-fade-up mt-3">
+      <h2 class="text-[20px] font-semibold text-[#0a0b19]">Section 9: <span class="text-[#5c67f9]">Physical Properties</span></h2>
+      <p class="text-[14px] text-[#45454d] mt-1">Enter the basic information about your product and SDS configuration</p>
+    </div>
+
+    <form id="s9-form" class="anim-fade-up delay-1 mt-5 border border-[#e2e5e9] rounded-2xl bg-[#f8f9fa] p-6" novalidate>
+      <h3 class="text-[18px] font-semibold text-[#3f43af] mb-5">Product Information</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
+        <div>
+          <label class="lbl">State</label>
+          <div class="relative">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#98a2b3]" id="lock-ic"></span>
+            <input id="state" class="field field-locked pl-9" readonly title="Derived from the mixture state selected in Section 3" />
+          </div>
+        </div>
+        <div>
+          <label class="lbl" for="ph">pH</label>
+          <input id="ph" class="field" placeholder="e.g., 7" autocomplete="off" />
+        </div>
+        <div>
+          <label class="lbl" for="solubility">Water Solubility</label>
+          <select id="solubility" class="field placeholder">
+            <option value="" disabled selected hidden>Select a water solubility...</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl" for="density">SG/Density</label>
+          <input id="density" class="field" placeholder="e.g., 1.0" autocomplete="off" />
+        </div>
+        <div class="md:col-span-2">
+          <label class="lbl" for="flash">Flash Point</label>
+          <input id="flash" class="field" placeholder="write here..." autocomplete="off" />
+        </div>
+      </div>
+
+      <div id="extra-props" class="space-y-3 mt-4"></div>
+
+      <button type="button" class="w-full mt-4 py-3 border border-dashed border-[#cfd4dd] rounded-xl text-[15px] font-medium text-[#45454d] hover:border-[#5c67f9] hover:text-[#5c67f9] hover:bg-[#fbfbff] transition-all flex items-center justify-center gap-2" onclick="addProperty()">
+        <span id="plus-ic"></span> Add Other Properties
+      </button>
+
+      <button type="submit" id="s9-save" class="btn-primary w-full mt-5 !py-3 text-[16px]">Save &amp; Continue</button>
+    </form>
+  </main>
+
+  <aside class="w-[360px] shrink-0 px-6 py-7 hidden xl:block">
+    <div id="app-tutorial"></div>
+  </aside>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/common.js"></script>
+<script>
+renderShell({ step: 2, header: "welcome", tutorial: "9" });
+document.getElementById("lock-ic").innerHTML = I.lock;
+document.getElementById("plus-ic").innerHTML = I.plus;
+
+const s9 = State.data.section9;
+
+// State carries over from the mixture state chosen in Section 3 (locked)
+document.getElementById("state").value = State.data.mixtureState || "Gas";
+
+const sol = document.getElementById("solubility");
+SOLUBILITIES.forEach((s) => {
+  const o = document.createElement("option");
+  o.value = o.textContent = s;
+  if (s === s9.solubility) o.selected = true;
+  sol.appendChild(o);
+});
+sol.classList.toggle("placeholder", !sol.value);
+sol.addEventListener("change", () => sol.classList.remove("placeholder"));
+
+["ph", "density", "flash"].forEach((id) => { if (s9[id]) document.getElementById(id).value = s9[id]; });
+
+/* dynamic extra properties */
+let extraProps = s9.extra || [];
+function renderExtras() {
+  document.getElementById("extra-props").innerHTML = extraProps.map((p, i) => `
+    <div class="grid grid-cols-[1fr_1fr_44px] gap-3 items-end anim-row-in">
+      <div>
+        <label class="lbl">Property Name</label>
+        <input class="field" placeholder="e.g., Boiling Point" value="${esc(p.name)}" oninput="extraProps[${i}].name=this.value" />
+      </div>
+      <div>
+        <label class="lbl">Value</label>
+        <input class="field" placeholder="e.g., 100 °C" value="${esc(p.value)}" oninput="extraProps[${i}].value=this.value" />
+      </div>
+      <button type="button" class="icon-btn danger h-[44px] border border-[#e2e5e9] rounded-[10px] flex items-center justify-center" onclick="removeExtra(${i})">${I.trash}</button>
+    </div>`).join("");
+}
+function addProperty() {
+  extraProps.push({ name: "", value: "" });
+  renderExtras();
+  const inputs = document.querySelectorAll("#extra-props input");
+  inputs[inputs.length - 2] && inputs[inputs.length - 2].focus();
+}
+function removeExtra(i) { extraProps.splice(i, 1); renderExtras(); }
+renderExtras();
+
+document.getElementById("s9-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  Object.assign(State.data.section9, {
+    state: document.getElementById("state").value,
+    ph: document.getElementById("ph").value,
+    solubility: sol.value,
+    density: document.getElementById("density").value,
+    flash: document.getElementById("flash").value,
+    extra: extraProps.filter((p) => p.name.trim() || p.value.trim()),
+  });
+  State.save();
+  const btn = document.getElementById("s9-save");
+  btnBusy(btn, "Saving…");
+  setTimeout(() => {
+    btn.innerHTML = `${I.check} Saved`;
+    toast("Section 9 saved", "success");
+    setTimeout(() => (window.location.href = "section-14.html"), 650);
+  }, 850);
+});
+</script>
+</body>
+</html>

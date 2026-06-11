@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ExactSDS — Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Figtree:wght@500;600&family=Plus+Jakarta+Sans:wght@500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body class="page-dots bg-white min-h-screen">
+
+<div class="flex relative z-[1] min-h-screen">
+
+  <!-- ===== Sidebar ===== -->
+  <aside class="w-[260px] shrink-0 border-r border-[#e2e5e9] bg-[#fbfbfc] flex flex-col h-screen sticky top-0">
+    <div class="px-5 pt-5 pb-4 anim-fade-in" id="logo-zone"></div>
+    <nav class="px-4 space-y-1 mt-2 stagger">
+      <a class="side-item active" href="dashboard.html"><span id="ic-home"></span> Dashboard</a>
+      <button class="side-item w-full" onclick="toast('Demo: Library is outside this flow')">
+        <span id="ic-doc"></span> Library <span class="ml-auto text-[#98989b]" id="ic-chev"></span>
+      </button>
+      <button class="side-item w-full" onclick="toast('Demo: Substance Library is outside this flow')"><span id="ic-lib"></span> Substance Library</button>
+      <button class="side-item w-full" onclick="toast('Demo: SDS Import is outside this flow')"><span id="ic-up"></span> SDS Import</button>
+    </nav>
+    <div class="mt-auto p-4">
+      <div class="relative overflow-hidden rounded-2xl border border-[#d2d3fe] bg-gradient-to-b from-[#f4f4ff] to-[#ecedfe] p-4 anim-fade-up delay-3">
+        <div class="cc-dots"></div>
+        <h4 class="text-[15px] font-semibold text-[#1f1f26]">Need more credit?</h4>
+        <p class="text-[12.5px] leading-[18px] text-[#45454d] mt-1">Upgrade anytime — prorated billing, cancel whenever.</p>
+        <button class="btn-primary w-full mt-3.5 !py-2.5 !text-[14px]" onclick="toast('Demo: upgrade flow would open here','success')"><span id="ic-crown"></span> Upgrade Plan</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===== Main ===== -->
+  <div class="flex-1 min-w-0 flex flex-col">
+
+    <!-- header -->
+    <header class="flex items-center justify-between pl-3 pr-6 h-[64px] bg-white border-b border-[#e2e5e9] relative">
+      <div class="flex items-center gap-3">
+        <button class="w-8 h-8 -ml-7 rounded-full border border-[#e2e5e9] bg-white flex items-center justify-center text-[#727284] hover:text-[#5c67f9] hover:border-[#c7cdf9] transition-colors shadow-sm relative z-10" title="Collapse" id="ic-collapse"></button>
+        <h1 class="text-[19px] font-semibold text-[#1f1f26] ml-2">Welcome to ExactSDS, Jahid</h1>
+        <span class="text-[12px] text-[#727284] mt-[3px]" id="today"></span>
+      </div>
+      <div class="flex items-center gap-3">
+        <button class="btn-secondary !py-2" onclick="toast('Demo: a sales specialist will reach out!','success')">Book a Demo</button>
+        <div class="w-px h-6 bg-[#e2e5e9]"></div>
+        <button class="btn-secondary !py-2 flex items-center gap-2">🇺🇸 English <span id="ic-chev2"></span></button>
+        <button class="btn-secondary !p-2.5" title="Notifications" onclick="toast('No new notifications')"><span id="ic-bell"></span></button>
+        <div class="flex items-center gap-1.5 cursor-pointer group">
+          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-[#5c67f9] to-[#8b93fb] flex items-center justify-center text-white text-[13px] font-semibold ring-2 ring-white shadow group-hover:scale-105 transition-transform">J</div>
+          <span class="text-[#727284] group-hover:text-[#1f1f26] transition-colors" id="ic-chev3"></span>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 px-7 py-8">
+      <!-- ===== Hero ===== -->
+      <section class="hero anim-fade-up px-8 pt-7 pb-12">
+        <div class="relative inline-flex items-center gap-2 bg-white rounded-full pl-2.5 pr-3.5 py-1.5 shadow-sm anim-scale-in">
+          <span class="w-[7px] h-[7px] rounded-full bg-[#12b76a]" style="animation: pulseSoft 2s infinite"></span>
+          <span class="text-[12px] font-semibold text-[#3f43af]">Welcome Back</span>
+        </div>
+
+        <div class="relative max-w-[589px] mx-auto text-center mt-2">
+          <!-- flask illustration -->
+          <div class="inline-block anim-pop" style="animation: floaty 3.4s ease-in-out infinite">
+            <svg width="56" height="62" viewBox="0 0 56 62" fill="none">
+              <path d="M23 8h10v12l9.5 22.5A6 6 0 0 1 37 51H19a6 6 0 0 1-5.5-8.5L23 20V8Z" fill="#fff" stroke="#5c67f9" stroke-width="2.4" stroke-linejoin="round"/>
+              <path d="M20.5 8h15" stroke="#5c67f9" stroke-width="2.4" stroke-linecap="round"/>
+              <path d="M17.5 36h21l5 12a4 4 0 0 1-3.7 5.5H16.2a4 4 0 0 1-3.7-5.5l5-12Z" fill="#8b93fb" opacity=".75"/>
+              <circle cx="23" cy="43" r="2" fill="#fff"/><circle cx="31" cy="47" r="1.6" fill="#fff"/>
+              <circle cx="13" cy="14" r="3" fill="#f7c948"/><circle cx="44" cy="10" r="2.4" fill="#f63d68"/>
+              <circle cx="47" cy="22" r="2" fill="#12b76a"/><circle cx="9" cy="26" r="2" fill="#8b93fb"/>
+              <path d="M40 4.5v5M37.5 7h5" stroke="#5c67f9" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h2 class="text-[32px] leading-10 font-bold text-[#1f1f26] mt-3 anim-fade-up delay-1">Your SDS workspace is ready.</h2>
+          <p class="text-[14px] leading-5 text-[#45454d] mt-2.5 anim-fade-up delay-2">Continue creating compliant Safety Data Sheets with <b id="hero-credits">86</b> credits remaining. Access your <b id="hero-products">16</b> products and manage your compliance workflow efficiently.</p>
+          <div class="flex items-center justify-center gap-3 mt-7 anim-fade-up delay-3">
+            <a href="section-1.html" class="btn-secondary !py-[11px] !px-6 !text-[15px] !rounded-[10px] !bg-white">+ Create New SDS</a>
+            <button class="btn-ai" onclick="createWithAI(this)">Create with AI
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M11 3 8.8 8.8 3 11l5.8 2.2L11 19l2.2-5.8L19 11l-5.8-2.2L11 3Z"/><path d="M19.5 14.5 18.6 17l-2.5.9 2.5.9.9 2.5.9-2.5 2.5-.9-2.5-.9-.9-2.5Z"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Credit Wallet ===== -->
+      <section class="mt-9 max-w-[1100px] mx-auto">
+        <div class="flex items-center justify-between anim-fade-up">
+          <h3 class="text-[20px] font-semibold text-[#1f1f26]">Credit Wallet</h3>
+          <div class="flex items-center gap-2.5">
+            <button class="btn-primary !py-2 !px-4 !text-[14px]" onclick="toast('Demo: checkout would open here','success')">+ Buy Credit</button>
+            <button class="inline-flex items-center justify-center gap-2 bg-[#3a3f4b] text-white text-[14px] font-medium rounded-[10px] py-2 px-4 hover:bg-[#2b2f38] transition-colors" onclick="toast('Demo: connecting you to an expert…','success')">Talk to Expert</button>
+          </div>
+        </div>
+
+        <div id="wallet-cards" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mt-5 stagger"></div>
+      </section>
+
+      <!-- footer -->
+      <footer class="flex items-center justify-center gap-10 mt-14 pb-4 anim-fade-up delay-4">
+        <button class="flex items-center gap-2 text-[14px] text-[#6a7282] hover:text-[#5c67f9] transition-colors" onclick="toast('Demo: Help Center')"><span id="ic-help"></span> Help Center</button>
+        <button class="flex items-center gap-2 text-[14px] text-[#6a7282] hover:text-[#5c67f9] transition-colors" onclick="toast('Demo: Terms & Privacy')"><span id="ic-doc2"></span> Terms &amp; Privacy</button>
+        <button class="flex items-center gap-2 text-[14px] text-[#6a7282] hover:text-[#5c67f9] transition-colors" onclick="toast('Demo: Contact Support')"><span id="ic-mail"></span> Contact Support</button>
+      </footer>
+    </main>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/common.js"></script>
+<script>
+/* fill icons */
+document.getElementById("logo-zone").innerHTML = I.wordmark;
+document.getElementById("ic-home").innerHTML = I.home;
+document.getElementById("ic-doc").innerHTML = I.doc;
+document.getElementById("ic-lib").innerHTML = I.library;
+document.getElementById("ic-up").innerHTML = I.upload;
+document.getElementById("ic-chev").innerHTML = I.chevron;
+document.getElementById("ic-crown").innerHTML = I.crown;
+document.getElementById("ic-collapse").innerHTML = I.collapse;
+document.getElementById("ic-chev2").innerHTML = I.chevron;
+document.getElementById("ic-chev3").innerHTML = I.chevron;
+document.getElementById("ic-help").innerHTML = I.help;
+document.getElementById("ic-doc2").innerHTML = I.fileText;
+document.getElementById("ic-mail").innerHTML = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 6 8-6"/></svg>`;
+document.getElementById("ic-bell").innerHTML = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 1 1 12 0c0 4 1.7 5.6 2.4 6.3.3.3.1.7-.3.7H3.9c-.4 0-.6-.4-.3-.7C4.3 14.6 6 13 6 9Z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>`;
+document.getElementById("today").textContent = fmtToday();
+
+/* wallet cards — dummy data, lightly tied to demo state */
+const usedSds = State.data.section1 && State.data.section1.productName ? 1 : 0;
+const WALLET = [
+  { name: "SDS Creation", color: "#3f43af", bar: "#5c67f9", iconBg: "#e8ecfe", used: usedSds, total: 2,
+    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3f43af" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>` },
+  { name: "Translation", color: "#067647", bar: "#12b76a", iconBg: "#e6f9ef", used: 0, total: 0,
+    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#067647" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8"/><path d="M12 3a14.5 14.5 0 0 1 0 18 14.5 14.5 0 0 1 0-18Z"/></svg>` },
+  { name: "Version", color: "#6941c6", bar: "#9b8afb", iconBg: "#f1edfe", used: 0, total: 0,
+    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6941c6" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 3v4h-4"/></svg>` },
+  { name: "SDS Import", color: "#b54708", bar: "#f5821f", iconBg: "#fef0e3", used: 1, total: 2,
+    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b54708" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5"/><path d="m7 9 5-4.5L12 4.5 17 9"/><path d="M5 19h14"/></svg>` },
+];
+
+document.getElementById("wallet-cards").innerHTML = WALLET.map((w, i) => {
+  const remaining = Math.max(w.total - w.used, 0);
+  const pct = w.total ? Math.round((remaining / w.total) * 100) : 0;
+  return `
+  <div class="credit-card">
+    <div class="cc-dots"></div>
+    <div class="flex items-start justify-between">
+      <div class="w-11 h-11 rounded-[10px] flex items-center justify-center" style="background:${w.iconBg}">${w.icon}</div>
+      <span class="text-[14px] font-medium text-[#727284]">${remaining}/${w.total}</span>
+    </div>
+    <h4 class="text-[17px] font-semibold mt-4" style="color:${w.color}">${w.name}</h4>
+    <div class="cc-bar mt-4"><i data-pct="${pct}" style="width:0%; background:${w.bar}"></i></div>
+    <p class="text-[14px] text-[#45454d] mt-2">${remaining} credits remaining</p>
+  </div>`;
+}).join("");
+
+// animate progress bars in
+setTimeout(() => document.querySelectorAll(".cc-bar i").forEach((b) => (b.style.width = b.dataset.pct + "%")), 350);
+
+// hero numbers
+document.getElementById("hero-credits").textContent = 86 - usedSds;
+document.getElementById("hero-products").textContent = 16;
+
+/* Create with AI — playful demo loader then route to section 1 */
+function createWithAI(btn) {
+  btn.disabled = true;
+  btn.innerHTML = `<span class="inline-flex items-center gap-2.5">${Loader.dots()}<span>Spinning up AI…</span></span>`;
+  setTimeout(() => {
+    toast("AI assistant ready — let's start with Section 1", "success");
+    setTimeout(() => (window.location.href = "section-1.html"), 500);
+  }, 1200);
+}
+</script>
+</body>
+</html>
