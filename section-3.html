@@ -157,12 +157,16 @@ let modalCtx = null; // { ov, foundChem }
 function openAddChemical() {
   modalCtx = { found: null };
   const ov = openOverlay(`
-    <div class="modal bg-white rounded-2xl shadow-2xl w-[768px] max-w-[94vw] p-7">
-      <div class="flex items-center justify-between mb-5">
-        <h3 class="text-[18px] font-medium text-[#1f1f26]">Add Chemical</h3>
-        <button class="icon-btn" onclick="closeOverlay(this.closest('.overlay'))">${I.x}</button>
+    <div class="drawer bg-white w-[860px] max-w-[95vw] my-2.5 mr-2.5 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+      <div class="flex items-start justify-between px-7 py-5 border-b border-[#eef0f3]">
+        <div>
+          <h3 class="text-[18px] font-semibold text-[#1f1f26]">Add Chemical</h3>
+          <p class="text-[13px] text-[#727284] mt-0.5">Search by CAS Number or Chemical Name, then verify to add.</p>
+        </div>
+        <button class="icon-btn !p-2.5 border border-[#e2e5e9] rounded-xl" onclick="closeOverlay(this.closest('.overlay'))">${I.x}</button>
       </div>
-      <div class="border border-[#e2e5e9] rounded-2xl bg-[#fcfcfd] p-6">
+      <div class="nice-scroll flex-1 overflow-y-auto px-7 py-6 flex flex-col">
+      <div class="border border-[#e2e5e9] rounded-2xl bg-[#fcfcfd] p-6 anim-fade-up">
         <div class="flex items-center justify-between mb-4">
           <h4 class="text-[18px] font-semibold text-[#3f43af]">Chemical List</h4>
           <button class="btn-secondary !py-2 !text-[12px]">${I.preset} Select Preset</button>
@@ -186,7 +190,40 @@ function openAddChemical() {
         <button id="search-btn" class="btn-soft w-full mt-5 !py-3" onclick="searchChemical()">${I.search} Search Chemical</button>
         <div id="found-panel"></div>
       </div>
-    </div>`);
+
+      <!-- tutorial card (Figma 3587-19987) -->
+      <div class="mt-auto pt-10 ml-auto w-[372px] anim-fade-up delay-2" id="add-tutorial">
+        <div class="relative" id="tutorial-card">
+          <button class="absolute -top-1 right-0 text-[#98989b] hover:text-[#1f1f26] transition-colors" onclick="dismissTutorial()">${I.x}</button>
+          <h3 class="text-[17px] font-semibold text-[#1f1f26] pr-7">How to fill in Section 1 of your SDS</h3>
+          <p class="text-[12px] leading-4 text-[#727284] mt-1.5">Follow this step-by-step tutorial to complete Section 1 of your SDS, including product details, company info, regulations, and emergency contacts.</p>
+          <div class="video-thumb mt-3.5 h-[185px]" onclick="playTutorial(this)">
+            <svg viewBox="0 0 334 186" class="w-full h-full" preserveAspectRatio="xMidYMid slice">
+              <defs><linearGradient id="vg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3c4a63"/><stop offset=".55" stop-color="#5b6d8c"/><stop offset="1" stop-color="#8fa0b8"/></linearGradient></defs>
+              <rect width="334" height="186" fill="url(#vg2)"/>
+              <rect x="18" y="60" width="120" height="86" rx="6" fill="#c9d2de"/>
+              <rect x="26" y="68" width="104" height="30" rx="4" fill="#94a3b8"/>
+              <circle cx="44" cy="116" r="7" fill="#ef4444"/><circle cx="64" cy="116" r="7" fill="#f7c948"/>
+              <rect x="84" y="108" width="44" height="16" rx="3" fill="#64748b"/>
+              <path d="M225 58c-10 0-18 9-18 22v66h52v-66c0-13-8-22-18-22h-16z" fill="#27364d"/>
+              <circle cx="233" cy="44" r="13" fill="#e8c39e"/>
+              <path d="M220 36c0-7 6-12 13-12s13 5 13 12l-4 4h-18l-4-4z" fill="#f1f5f9"/>
+              <rect x="186" y="92" width="34" height="6" rx="3" fill="#1e293b" transform="rotate(18 186 92)"/>
+              <rect x="166" y="98" width="40" height="26" rx="3" fill="#cbd5e1"/>
+              <rect x="170" y="102" width="32" height="14" rx="2" fill="#475569"/>
+            </svg>
+            <span class="absolute top-2.5 left-2.5 text-[10px] font-semibold text-[#5c67f9] bg-[#d2d3fe] px-2 py-1 rounded-md">Tutorial</span>
+            <div class="play">${I.play}</div>
+            <div class="absolute bottom-0 inset-x-0 px-3 pb-2.5 pt-6 bg-gradient-to-t from-black/55 to-transparent flex items-center gap-2">
+              <span class="text-[9px] text-white font-medium" id="vid-time">0.00</span>
+              <div class="flex-1 h-[3px] bg-white/30 rounded-full overflow-hidden"><div class="h-full bg-[#5c67f9] rounded-full transition-all duration-300" id="vid-bar" style="width:6%"></div></div>
+              <span class="text-[9px] text-white font-medium">1.04</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>`, { drawer: true });
   modalCtx.ov = ov;
   setTimeout(() => ov.querySelector("#cas-input").focus(), 80);
   ov.querySelector("#cas-input").addEventListener("keydown", (e) => { if (e.key === "Enter") searchChemical(); });
@@ -275,47 +312,59 @@ function verifyChemical() {
   }, 1750);
 }
 
-/* ============ chemical drawer ============ */
-let drawerCtx = null; // { chem, isNew, ov }
+/* ============ chemical drawer — step wizard (Figma 3587-20757 → 3590-22606) ============ */
+let drawerCtx = null; // { chem, isNew, ov, step }
+
+// leaf icon for the Ecotoxicity step (green square in Figma)
+I.leaf = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 4c-8 0-13 4-13 10a6 6 0 0 0 6 6c6 0 7-8 7-16Z"/><path d="M5 20c2-5 5-8 9-10"/></svg>`;
+
+const DRAWER_STEPS = [
+  { key: "hcode", label: "H Code" },
+  { key: "exposure", label: "Exposure" },
+  { key: "tox", label: "Toxicology" },
+  { key: "eco", label: "Ecotoxicity" },
+];
 
 function openDrawer(existingId, draftChem) {
   const isNew = !existingId;
   const chem = isNew ? draftChem : State.data.chemicals.find((c) => c.id === existingId);
-  drawerCtx = { chem, isNew };
+  drawerCtx = { chem, isNew, step: 0 };
 
   const ov = openOverlay(`
-    <div class="drawer bg-white w-[860px] max-w-[95vw] h-full shadow-2xl flex flex-col">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-[#eef0f3]">
-        <div class="flex items-center gap-4">
-          <button class="icon-btn !p-2 border border-[#e2e5e9] rounded-full" onclick="closeOverlay(this.closest('.overlay'))">${I.x}</button>
-          <div>
-            <h3 class="text-[16px] font-semibold text-[#0a0b19]">${esc(chem.name)}</h3>
-            <p class="text-[12px] text-[#727284]">CAS: ${esc(chem.cas)}</p>
-          </div>
+    <div class="drawer bg-white w-[860px] max-w-[95vw] my-2.5 mr-2.5 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+      <div class="flex items-start justify-between px-6 py-4 border-b border-[#eef0f3]">
+        <div>
+          <h3 class="text-[16px] font-semibold text-[#0a0b19]">${esc(chem.name)}</h3>
+          <p class="text-[12px] text-[#727284] mt-0.5">CAS: ${esc(chem.cas)}</p>
         </div>
-        <button class="btn-primary !py-2.5" onclick="saveDrawer()">Save &amp; Close</button>
+        <button class="icon-btn !p-2.5 border border-[#e2e5e9] rounded-xl" onclick="closeOverlay(this.closest('.overlay'))">${I.x}</button>
       </div>
       <div class="px-6 pt-4">
         <div class="tabbar" id="drawer-tabs">
-          <div class="tab active" data-target="sec-hcode">H Code</div>
-          <div class="tab" data-target="sec-exposure">Exposure</div>
-          <div class="tab" data-target="sec-tox">Toxicology</div>
-          <div class="tab" data-target="sec-eco">Ecotoxicity</div>
+          ${DRAWER_STEPS.map((s, i) => `<div class="tab" data-step="${i}">${s.label}</div>`).join("")}
         </div>
+        <div id="drawer-note" class="flex items-center gap-1.5 mt-2.5 text-[12px] text-[#727284]"></div>
       </div>
-      <div id="drawer-body" class="nice-scroll flex-1 overflow-y-auto px-6 py-5 space-y-7"></div>
+      <div id="drawer-body" class="nice-scroll flex-1 overflow-y-auto px-6 py-5"></div>
+      <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#eef0f3] bg-white">
+        <button id="drawer-prev" class="btn-secondary !py-2.5 !px-7" onclick="drawerStep(-1)">${I.arrowLeft} Prev</button>
+        <button id="drawer-next" class="btn-primary !py-2.5 !px-7" onclick="drawerStep(1)"></button>
+      </div>
     </div>`, { drawer: true });
   drawerCtx.ov = ov;
-  renderDrawerBody();
 
-  // tab scrolling
   ov.querySelectorAll(".tab").forEach((t) =>
-    t.addEventListener("click", () => {
-      ov.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
-      t.classList.add("active");
-      document.getElementById(t.dataset.target).scrollIntoView({ behavior: "smooth", block: "start" });
-    })
+    t.addEventListener("click", () => { drawerCtx.step = +t.dataset.step; renderStep(); })
   );
+  renderStep();
+}
+
+function drawerStep(dir) {
+  if (dir > 0 && drawerCtx.step === DRAWER_STEPS.length - 1) { saveDrawer(); return; }
+  const next = drawerCtx.step + dir;
+  if (next < 0 || next >= DRAWER_STEPS.length) return;
+  drawerCtx.step = next;
+  renderStep();
 }
 
 const SECTION_HEAD = (icon, iconBg, title, sub) => `
@@ -327,67 +376,74 @@ const SECTION_HEAD = (icon, iconBg, title, sub) => `
     </div>
   </div>`;
 
-function renderDrawerBody() {
+const TABLE_STEP = (kind, head, gridCls, cols) => `
+  <section class="anim-fade-up">
+    ${head}
+    <div class="border border-[#e2e5e9] rounded-xl overflow-hidden bg-white">
+      <div class="grid ${gridCls} bg-[#f7f8fa] border-b border-[#e2e5e9] px-4 py-2.5 text-[14px] font-medium text-[#6a7282]">
+        ${cols.map((c) => `<span>${c}</span>`).join("")}<span></span>
+      </div>
+      <div id="${kind}-rows"></div>
+      <button class="w-full py-3 text-[#667085] font-medium text-[15px] border-t border-dashed border-[#e2e5e9] hover:bg-[#fafbfe] hover:text-[#5c67f9] transition-colors flex items-center justify-center gap-2" onclick="addRow('${kind}')">${I.plus} Add New</button>
+    </div>
+  </section>`;
+
+function renderStep() {
   const c = drawerCtx.chem;
-  document.getElementById("drawer-body").innerHTML = `
-    <!-- H CODE — raised above sibling sections so the code-suggest dropdown never paints under the Exposure table -->
-    <section id="sec-hcode" class="anim-fade-up relative z-30">
-      ${SECTION_HEAD(I.shield, "bg-[#5c67f9]", `H Code for ${esc(c.name)}`, "Your selected “PubChem” data will be shown by default.")}
-      <div class="relative">
-        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#98a2b3]">${I.plus}</span>
-        <input id="hcode-input" class="field pl-9" placeholder="Add code (e.g., H301, EUH070, AUH070)" autocomplete="off" />
-      </div>
-      <div class="border border-[#e2e5e9] rounded-xl p-3.5 mt-3 bg-[#fcfcfd]">
-        <div id="hcode-grid" class="grid grid-cols-2 gap-3"></div>
-      </div>
-    </section>
+  const step = drawerCtx.step;
+  const body = document.getElementById("drawer-body");
 
-    <!-- EXPOSURE -->
-    <section id="sec-exposure" class="anim-fade-up delay-1 relative z-0">
-      ${SECTION_HEAD(I.warn, "bg-[#f79009]", "Exposure Parameters", "Edit inline; click outside to save locally.")}
-      <div class="border border-[#e2e5e9] rounded-xl overflow-hidden bg-white">
-        <div class="grid grid-cols-[1fr_1fr_1fr_72px] bg-[#f7f8fa] border-b border-[#e2e5e9] px-4 py-2.5 text-[14px] font-medium text-[#6a7282]">
-          <span>Method</span><span>Regulation</span><span>Limit Value</span><span></span>
+  // tabs
+  document.querySelectorAll("#drawer-tabs .tab").forEach((t, i) => t.classList.toggle("active", i === step));
+
+  // info note — shown on all steps after the first (Figma)
+  document.getElementById("drawer-note").innerHTML =
+    step > 0 ? `${I.warnCircle} <span>Review all tabs to see complete hazard information.</span>` : "";
+
+  // footer
+  const prev = document.getElementById("drawer-prev");
+  prev.classList.toggle("opacity-50", step === 0);
+  prev.classList.toggle("pointer-events-none", step === 0);
+  document.getElementById("drawer-next").innerHTML =
+    step === DRAWER_STEPS.length - 1
+      ? `Save &amp; Close ${I.check}`
+      : `Next <span style="display:inline-flex;transform:scaleX(-1)">${I.arrowLeft}</span>`;
+
+  // body — one step at a time
+  if (step === 0) {
+    body.innerHTML = `
+      <section class="anim-fade-up">
+        ${SECTION_HEAD(I.shield, "bg-[#5c67f9]", `H Code for ${esc(c.name)}`, "Your selected “PubChem” data will be shown by default.")}
+        <div class="relative">
+          <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#98a2b3]">${I.plus}</span>
+          <input id="hcode-input" class="field pl-9" placeholder="Add code (e.g., H301, EUH070, AUH070)" autocomplete="off" />
         </div>
-        <div id="exposure-rows"></div>
-        <button class="w-full py-3 text-[#667085] font-medium text-[15px] hover:bg-[#fafbfe] hover:text-[#5c67f9] transition-colors flex items-center justify-center gap-2" onclick="addRow('exposure')">${I.plus} Add New</button>
-      </div>
-    </section>
-
-    <!-- TOXICOLOGY -->
-    <section id="sec-tox" class="anim-fade-up delay-2 relative z-0">
-      ${SECTION_HEAD(I.flask, "bg-[#f63d68]", "Toxicological", "Edit inline; click outside to save locally.")}
-      <div class="border border-[#e2e5e9] rounded-xl overflow-hidden bg-white">
-        <div class="grid grid-cols-[1fr_1fr_1fr_1fr_72px] bg-[#f7f8fa] border-b border-[#e2e5e9] px-4 py-2.5 text-[14px] font-medium text-[#6a7282]">
-          <span>Result</span><span>Dose</span><span>Species</span><span>Exposure</span><span></span>
+        <div class="border border-[#e2e5e9] rounded-xl p-3.5 mt-3 bg-[#fcfcfd]">
+          <div id="hcode-grid" class="grid grid-cols-2 gap-3"></div>
         </div>
-        <div id="tox-rows"></div>
-        <button class="w-full py-3 text-[#667085] font-medium text-[15px] hover:bg-[#fafbfe] hover:text-[#5c67f9] transition-colors flex items-center justify-center gap-2" onclick="addRow('tox')">${I.plus} Add New</button>
-      </div>
-    </section>
-
-    <!-- ECOTOXICITY -->
-    <section id="sec-eco" class="anim-fade-up delay-3 pb-8 relative z-0">
-      ${SECTION_HEAD(I.shieldCheck, "bg-[#12b76a]", "Ecotoxicity", "Edit inline; click outside to save locally.")}
-      <div class="border border-[#e2e5e9] rounded-xl overflow-hidden bg-white">
-        <div class="grid grid-cols-[1.4fr_.8fr_1fr_.8fr_72px] bg-[#f7f8fa] border-b border-[#e2e5e9] px-4 py-2.5 text-[14px] font-medium text-[#6a7282]">
-          <span>Species</span><span>Result</span><span>Value</span><span>Duration</span><span></span>
-        </div>
-        <div id="eco-rows"></div>
-        <button class="w-full py-3 text-[#667085] font-medium text-[15px] hover:bg-[#fafbfe] hover:text-[#5c67f9] transition-colors flex items-center justify-center gap-2" onclick="addRow('eco')">${I.plus} Add New</button>
-      </div>
-    </section>`;
-
-  renderHCodes();
-  renderDataRows("exposure", ["method", "regulation", "limit"]);
-  renderDataRows("tox", ["result", "dose", "species", "exposure"]);
-  renderDataRows("eco", ["species", "result", "value", "duration"]);
-
-  attachCodeSuggest(document.getElementById("hcode-input"), (code, entry) => {
-    drawerCtx.chem.hcodes.push({ code, text: entry.text, tone: entry.tone });
-    renderHCodes(true);
-    toast(`Code ${code} added`, "success");
-  });
+      </section>`;
+    renderHCodes();
+    attachCodeSuggest(document.getElementById("hcode-input"), (code, entry) => {
+      drawerCtx.chem.hcodes.push({ code, text: entry.text, tone: entry.tone });
+      renderHCodes(true);
+      toast(`Code ${code} added`, "success");
+    });
+  } else if (step === 1) {
+    body.innerHTML = TABLE_STEP("exposure",
+      SECTION_HEAD(I.warn, "bg-[#f79009]", "Exposure Parameters", "Edit inline; click outside to save locally."),
+      "grid-cols-[1fr_1fr_1fr_72px]", ["Method", "Regulation", "Limit Value"]);
+    renderDataRows("exposure", ["method", "regulation", "limit"]);
+  } else if (step === 2) {
+    body.innerHTML = TABLE_STEP("tox",
+      SECTION_HEAD(I.flask, "bg-[#f63d68]", "Toxicological", "Edit inline; click outside to save locally."),
+      "grid-cols-[1fr_1fr_1fr_1fr_72px]", ["Result", "Dose", "Species", "Exposure"]);
+    renderDataRows("tox", ["result", "dose", "species", "exposure"]);
+  } else {
+    body.innerHTML = TABLE_STEP("eco",
+      SECTION_HEAD(I.leaf, "bg-[#12b76a]", "Ecotoxicity", "Edit inline; click outside to save locally."),
+      "grid-cols-[1.4fr_.8fr_1fr_.8fr_72px]", ["Species", "Result", "Value", "Duration"]);
+    renderDataRows("eco", ["species", "result", "value", "duration"]);
+  }
 }
 
 function renderHCodes(animateLast) {
