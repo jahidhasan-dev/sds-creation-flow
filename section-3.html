@@ -330,8 +330,8 @@ const SECTION_HEAD = (icon, iconBg, title, sub) => `
 function renderDrawerBody() {
   const c = drawerCtx.chem;
   document.getElementById("drawer-body").innerHTML = `
-    <!-- H CODE -->
-    <section id="sec-hcode" class="anim-fade-up">
+    <!-- H CODE — raised above sibling sections so the code-suggest dropdown never paints under the Exposure table -->
+    <section id="sec-hcode" class="anim-fade-up relative z-30">
       ${SECTION_HEAD(I.shield, "bg-[#5c67f9]", `H Code for ${esc(c.name)}`, "Your selected “PubChem” data will be shown by default.")}
       <div class="relative">
         <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#98a2b3]">${I.plus}</span>
@@ -343,7 +343,7 @@ function renderDrawerBody() {
     </section>
 
     <!-- EXPOSURE -->
-    <section id="sec-exposure" class="anim-fade-up delay-1">
+    <section id="sec-exposure" class="anim-fade-up delay-1 relative z-0">
       ${SECTION_HEAD(I.warn, "bg-[#f79009]", "Exposure Parameters", "Edit inline; click outside to save locally.")}
       <div class="border border-[#e2e5e9] rounded-xl overflow-hidden bg-white">
         <div class="grid grid-cols-[1fr_1fr_1fr_72px] bg-[#f7f8fa] border-b border-[#e2e5e9] px-4 py-2.5 text-[14px] font-medium text-[#6a7282]">
@@ -355,7 +355,7 @@ function renderDrawerBody() {
     </section>
 
     <!-- TOXICOLOGY -->
-    <section id="sec-tox" class="anim-fade-up delay-2">
+    <section id="sec-tox" class="anim-fade-up delay-2 relative z-0">
       ${SECTION_HEAD(I.flask, "bg-[#f63d68]", "Toxicological", "Edit inline; click outside to save locally.")}
       <div class="border border-[#e2e5e9] rounded-xl overflow-hidden bg-white">
         <div class="grid grid-cols-[1fr_1fr_1fr_1fr_72px] bg-[#f7f8fa] border-b border-[#e2e5e9] px-4 py-2.5 text-[14px] font-medium text-[#6a7282]">
@@ -367,7 +367,7 @@ function renderDrawerBody() {
     </section>
 
     <!-- ECOTOXICITY -->
-    <section id="sec-eco" class="anim-fade-up delay-3 pb-8">
+    <section id="sec-eco" class="anim-fade-up delay-3 pb-8 relative z-0">
       ${SECTION_HEAD(I.shieldCheck, "bg-[#12b76a]", "Ecotoxicity", "Edit inline; click outside to save locally.")}
       <div class="border border-[#e2e5e9] rounded-xl overflow-hidden bg-white">
         <div class="grid grid-cols-[1.4fr_.8fr_1fr_.8fr_72px] bg-[#f7f8fa] border-b border-[#e2e5e9] px-4 py-2.5 text-[14px] font-medium text-[#6a7282]">

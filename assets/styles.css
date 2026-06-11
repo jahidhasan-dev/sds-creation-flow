@@ -520,7 +520,7 @@ select.field:invalid, select.field.placeholder { color: var(--placeholder); }
   border-radius: 14px;
   box-shadow: 0 14px 40px rgba(16,24,40,.14), 0 2px 8px rgba(16,24,40,.06);
   padding: 6px;
-  z-index: 70;
+  z-index: 150;
   max-height: 280px; overflow-y: auto;
   animation: suggestIn .22s cubic-bezier(.21,.8,.35,1) both;
 }
