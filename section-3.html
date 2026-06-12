@@ -523,7 +523,7 @@ function renderHCodes(animateLast) {
   const grid = document.getElementById("hcode-grid");
   const list = drawerCtx.chem.hcodes;
   grid.innerHTML = list.map((h, i) => `
-    <div class="code-card ${i === 0 || (animateLast && i === list.length - 1) ? "anim-scale-in" : ""} ${i === 0 || i === 3 ? "selected" : ""}">
+    <div class="code-card ${i === 0 || (animateLast && i === list.length - 1) ? "anim-scale-in" : ""}">
       ${hzBadge(h.code, h.tone)}
       <span class="text-[12px] font-medium text-[#727284] leading-4 line-clamp-2">${esc(h.text)}</span>
       <span class="x" onclick="removeHCode(this, ${i})">${I.x}</span>
