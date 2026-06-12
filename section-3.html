@@ -330,6 +330,10 @@ function openDrawer(existingId, draftChem) {
   const chem = isNew ? draftChem : State.data.chemicals.find((c) => c.id === existingId);
   drawerCtx = { chem, isNew, step: 0 };
 
+  // Reviewing an existing chemical → full overview drawer (Figma 3498-16584).
+  // Adding a new chemical → guided step wizard (Figma 3587/3590 series).
+  if (!isNew) { openReviewDrawer(chem); return; }
+
   const ov = openOverlay(`
     <div class="drawer bg-white w-[860px] max-w-[95vw] my-2.5 mr-2.5 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
       <div class="flex items-start justify-between px-6 py-4 border-b border-[#eef0f3]">
@@ -365,6 +369,79 @@ function drawerStep(dir) {
   if (next < 0 || next >= DRAWER_STEPS.length) return;
   drawerCtx.step = next;
   renderStep();
+}
+
+/* ---- review mode: all sections stacked, Save & Close in header (Figma 3498-16584) ---- */
+function openReviewDrawer(chem) {
+  const ov = openOverlay(`
+    <div class="drawer bg-white w-[860px] max-w-[95vw] my-2.5 mr-2.5 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-[#eef0f3]">
+        <div class="flex items-center gap-4">
+          <button class="icon-btn !p-2 border border-[#e2e5e9] rounded-full" onclick="closeOverlay(this.closest('.overlay'))">${I.x}</button>
+          <div>
+            <h3 class="text-[16px] font-semibold text-[#0a0b19]">${esc(chem.name)}</h3>
+            <p class="text-[12px] text-[#727284]">CAS: ${esc(chem.cas)}</p>
+          </div>
+        </div>
+        <button class="btn-primary !py-2.5" onclick="saveDrawer()">Save &amp; Close</button>
+      </div>
+      <div class="px-6 pt-4">
+        <div class="tabbar" id="drawer-tabs">
+          ${DRAWER_STEPS.map((s, i) => `<div class="tab ${i === 0 ? "active" : ""}" data-target="sec-${s.key}">${s.label}</div>`).join("")}
+        </div>
+      </div>
+      <div id="drawer-body" class="nice-scroll flex-1 overflow-y-auto px-6 py-5 space-y-7"></div>
+    </div>`, { drawer: true });
+  drawerCtx.ov = ov;
+  renderReviewBody();
+
+  // tabs scroll to their section
+  ov.querySelectorAll(".tab").forEach((t) =>
+    t.addEventListener("click", () => {
+      ov.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
+      t.classList.add("active");
+      document.getElementById(t.dataset.target).scrollIntoView({ behavior: "smooth", block: "start" });
+    })
+  );
+}
+
+function renderReviewBody() {
+  const c = drawerCtx.chem;
+  document.getElementById("drawer-body").innerHTML = `
+    <!-- H CODE — raised above sibling sections so the code-suggest dropdown never paints under the Exposure table -->
+    <section id="sec-hcode" class="anim-fade-up relative z-30">
+      ${SECTION_HEAD(I.shield, "bg-[#5c67f9]", `H Code for ${esc(c.name)}`, "Your selected “PubChem” data will be shown by default.")}
+      <div class="relative">
+        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#98a2b3]">${I.plus}</span>
+        <input id="hcode-input" class="field pl-9" placeholder="Add code (e.g., H301, EUH070, AUH070)" autocomplete="off" />
+      </div>
+      <div class="border border-[#e2e5e9] rounded-xl p-3.5 mt-3 bg-[#fcfcfd]">
+        <div id="hcode-grid" class="grid grid-cols-2 gap-3"></div>
+      </div>
+    </section>
+
+    <div class="anim-fade-up delay-1 relative z-0">${TABLE_STEP("exposure",
+      SECTION_HEAD(I.warn, "bg-[#f79009]", "Exposure Parameters", "Edit inline; click outside to save locally."),
+      "grid-cols-[1fr_1fr_1fr_72px]", ["Method", "Regulation", "Limit Value"]).replace('<section class="anim-fade-up">', '<section id="sec-exposure">')}</div>
+
+    <div class="anim-fade-up delay-2 relative z-0">${TABLE_STEP("tox",
+      SECTION_HEAD(I.flask, "bg-[#f63d68]", "Toxicological", "Edit inline; click outside to save locally."),
+      "grid-cols-[1fr_1fr_1fr_1fr_72px]", ["Result", "Dose", "Species", "Exposure"]).replace('<section class="anim-fade-up">', '<section id="sec-tox">')}</div>
+
+    <div class="anim-fade-up delay-3 relative z-0 pb-8">${TABLE_STEP("eco",
+      SECTION_HEAD(I.leaf, "bg-[#12b76a]", "Ecotoxicity", "Edit inline; click outside to save locally."),
+      "grid-cols-[1.4fr_.8fr_1fr_.8fr_72px]", ["Species", "Result", "Value", "Duration"]).replace('<section class="anim-fade-up">', '<section id="sec-eco">')}</div>`;
+
+  renderHCodes();
+  renderDataRows("exposure", ["method", "regulation", "limit"]);
+  renderDataRows("tox", ["result", "dose", "species", "exposure"]);
+  renderDataRows("eco", ["species", "result", "value", "duration"]);
+
+  attachCodeSuggest(document.getElementById("hcode-input"), (code, entry) => {
+    drawerCtx.chem.hcodes.push({ code, text: entry.text, tone: entry.tone });
+    renderHCodes(true);
+    toast(`Code ${code} added`, "success");
+  });
 }
 
 const SECTION_HEAD = (icon, iconBg, title, sub) => `
