@@ -50,10 +50,13 @@
         <button class="btn-primary mt-5 anim-fade-up delay-3" onclick="openAddChemical()"><span id="plus-ic"></span> Add Camical</button>
       </div>
 
+      <!-- previously generated final hazard code (saved state — Figma 3726-13678) -->
+      <div id="final-hazard-panel" class="border-t border-[#e2e5e9] bg-[#fbfbfc] px-5 py-5" style="display:none"></div>
+
       <!-- footer -->
       <div id="table-footer" class="border-t border-[#e2e5e9] bg-white px-5 py-4 items-center justify-between" style="display:none">
         <p class="text-[15px]"><span class="font-semibold text-[#1f1f26]" id="chem-count">0 chemicals added</span> <span class="text-[#98989b]">· Ready to generate</span></p>
-        <button class="btn-primary" onclick="openMixtureState()">Generate Final Hazard <span id="flask-ic"></span></button>
+        <button id="generate-btn" class="btn-primary" onclick="openMixtureState()">Generate Final Hazard <span id="flask-ic"></span></button>
       </div>
     </section>
   </main>
@@ -95,6 +98,103 @@ function renderTable() {
       </span>
     </div>`;
   }).join("");
+
+  renderFinalHazardPanel();
+}
+
+/* ============ saved final-hazard panel + footer button (Figma 3726-13678) ============ */
+let hazardPanelOpen = true;
+
+function hasSavedHazard() {
+  return Array.isArray(State.data.finalHazard) && State.data.finalHazard.length > 0;
+}
+
+function renderFinalHazardPanel() {
+  const panel = document.getElementById("final-hazard-panel");
+  const genBtn = document.getElementById("generate-btn");
+  const saved = hasSavedHazard() && State.data.chemicals.length > 0;
+
+  // footer button reflects whether a hazard code already exists
+  genBtn.innerHTML = saved
+    ? `Regenerate Final Hazard <span>${I.flask}</span>`
+    : `Generate Final Hazard <span>${I.flask}</span>`;
+  genBtn.setAttribute("onclick", saved ? "openRegenerateModal()" : "openMixtureState()");
+
+  if (!saved) { panel.style.display = "none"; return; }
+  panel.style.display = "block";
+
+  const groups = groupHazardCodes(State.data.finalHazard);
+  const when = State.data.finalHazardSavedAt
+    ? new Date(State.data.finalHazardSavedAt).toLocaleString("en-US", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+    : "";
+  const GROUPS = [
+    { key: "2", title: "Physical hazards (H2xx)", cls: "text-[#3f43af]" },
+    { key: "3", title: "Health hazards (H3xx)", cls: "text-[#b42318]" },
+    { key: "4", title: "Environmental hazards (H4xx)", cls: "text-[#067647]" },
+  ];
+
+  panel.innerHTML = `
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <span class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#067647] bg-[#ecfdf3] border border-[#abefc6] rounded-full px-2.5 py-1">${I.check} Saved</span>
+        <span class="text-[15px] font-semibold text-[#1f1f26]">Previously Generated Final Hazard Code</span>
+        <span class="text-[13px] text-[#727284]">- ${when}</span>
+      </div>
+      <button class="flex items-center gap-1.5 text-[13px] font-medium text-[#45454d] hover:text-[#5c67f9] transition-colors" onclick="toggleHazardPanel()">
+        <span id="hz-toggle-ic"></span> <span id="hz-toggle-label">${hazardPanelOpen ? "Hide" : "Show"}</span>
+        <span class="transition-transform ${hazardPanelOpen ? "" : "rotate-180"}" id="hz-toggle-chev">${I.chevron}</span>
+      </button>
+    </div>
+    <div id="hz-panel-body" class="grid grid-cols-1 lg:grid-cols-3 gap-3.5 mt-4" style="${hazardPanelOpen ? "" : "display:none"}">
+      ${GROUPS.map((g) => `
+        <div class="border border-[#e2e5e9] rounded-2xl bg-white p-4">
+          <h4 class="text-[15px] font-semibold ${g.cls} mb-3">${g.title}</h4>
+          ${groups[g.key].length
+            ? `<div class="flex flex-wrap gap-1.5">${groups[g.key].map((c) => hzBadge(c.code, c.tone)).join("")}</div>`
+            : `<p class="text-[12px] text-[#98989b]">No codes in this group.</p>`}
+        </div>`).join("")}
+    </div>`;
+  document.getElementById("hz-toggle-ic").innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="2.6"/></svg>`;
+}
+
+function toggleHazardPanel() {
+  hazardPanelOpen = !hazardPanelOpen;
+  const body = document.getElementById("hz-panel-body");
+  if (!body) return;
+  body.style.display = hazardPanelOpen ? "" : "none";
+  document.getElementById("hz-toggle-label").textContent = hazardPanelOpen ? "Hide" : "Show";
+  document.getElementById("hz-toggle-chev").classList.toggle("rotate-180", !hazardPanelOpen);
+}
+
+/* ============ regenerate final hazard (Figma 3727-14037) ============ */
+function openRegenerateModal() {
+  openOverlay(`
+    <div class="modal bg-white rounded-2xl shadow-2xl w-[490px] max-w-[92vw] p-7 text-center relative">
+      <button class="icon-btn absolute top-4 right-4" onclick="closeOverlay(this.closest('.overlay'))">${I.x}</button>
+      <div class="w-[62px] h-[62px] rounded-full bg-[#eef0fe] text-[#5c67f9] flex items-center justify-center mx-auto anim-pop">${I.flask}</div>
+      <h3 class="text-[22px] font-semibold text-[#1f1f26] mt-4">Regenerate Final Hazard?</h3>
+      <p class="text-[14px] text-[#45454d] mt-2 leading-5">You have made changes to your ingredient list. Regenerating will <b>replace your existing Final Hazard Code</b> with a new one based on the updated data.</p>
+      <div class="grid grid-cols-2 gap-3 mt-7">
+        <button class="btn-secondary !py-3" onclick="closeOverlay(this.closest('.overlay'))">${I.x} Cancel</button>
+        <button class="btn-primary !py-3" onclick="confirmRegenerate(this)">Yes, Regenerate ${I.flask}</button>
+      </div>
+    </div>`);
+}
+
+function confirmRegenerate(btn) {
+  // only a genuinely new chemical (id not present at last generation) re-runs the full procedure
+  const snapIds = (State.data.finalHazardChemSig || "").split(",").filter(Boolean);
+  const addedNew = State.data.chemicals.some((c) => !snapIds.includes(c.id));
+  closeOverlay(btn.closest(".overlay"), () => {
+    if (addedNew) {
+      // new chemical(s) since last generation → run the full procedure again
+      openMixtureState();
+    } else {
+      // nothing new → straight to the next step
+      toast("No new chemicals — continuing to Physical Properties", "success");
+      setTimeout(() => (window.location.href = "section-9.html"), 600);
+    }
+  });
 }
 
 function removeChemical(id) {
@@ -157,45 +257,173 @@ let modalCtx = null; // { ov, foundChem }
 function openAddChemical() {
   modalCtx = { found: null };
   const ov = openOverlay(`
-    <div class="modal bg-white rounded-2xl shadow-2xl w-[768px] max-w-[94vw] p-7">
-      <div class="flex items-center justify-between mb-5">
-        <h3 class="text-[18px] font-medium text-[#1f1f26]">Add Chemical</h3>
-        <button class="icon-btn" onclick="closeOverlay(this.closest('.overlay'))">${I.x}</button>
+    <div class="drawer bg-white w-[860px] max-w-[95vw] my-2.5 mr-2.5 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+      <div class="flex items-start justify-between px-7 py-5 border-b border-[#eef0f3]">
+        <div>
+          <h3 class="text-[18px] font-semibold text-[#1f1f26]">Add Chemical</h3>
+          <p class="text-[13px] text-[#727284] mt-0.5">Search by CAS Number or Chemical Name, then verify to add.</p>
+        </div>
+        <button class="icon-btn !p-2.5 border border-[#e2e5e9] rounded-xl" onclick="closeOverlay(this.closest('.overlay'))">${I.x}</button>
       </div>
-      <div class="border border-[#e2e5e9] rounded-2xl bg-[#fcfcfd] p-6">
+      <div class="nice-scroll flex-1 overflow-y-auto px-7 py-6 flex flex-col">
+      <div class="border border-[#e2e5e9] rounded-2xl bg-[#fcfcfd] p-6 anim-fade-up">
         <div class="flex items-center justify-between mb-4">
           <h4 class="text-[18px] font-semibold text-[#3f43af]">Chemical List</h4>
           <button class="btn-secondary !py-2 !text-[12px]">${I.preset} Select Preset</button>
         </div>
         <label class="lbl">CAS Number or Chemical Name</label>
-        <input id="cas-input" class="field" placeholder="Search by CAS no or chemical name" autocomplete="off" />
+        <div class="relative">
+          <input id="cas-input" class="field" placeholder="e.g., 7664-93-9" autocomplete="off" />
+        </div>
         <div class="grid grid-cols-2 gap-5 mt-4">
           <div>
-            <label class="lbl flex items-center gap-1.5">Actual Percentage
-              <span class="tip text-[#98a2b3]">${I.help}<span class="tip-pop">The real concentration of this chemical in your mixture.</span></span>
+            <label class="lbl flex items-center gap-1.5">Actual Percentage <span class="text-[#f04438] -ml-0.5">*</span>
+              <span class="tip text-[#98a2b3]">${I.help}<span class="tip-pop">The real concentration of this chemical in your mixture. Required before searching.</span></span>
             </label>
-            <input id="actual-input" class="field" placeholder="e.g., 1.0" autocomplete="off" />
+            <input id="actual-input" class="field" placeholder="e.g., 1.0" autocomplete="off" required />
           </div>
           <div>
-            <label class="lbl flex items-center gap-1.5">SDS Displayed Percentage
-              <span class="tip text-[#98a2b3]">${I.help}<span class="tip-pop">The concentration range shown on the published SDS document.</span></span>
+            <label class="lbl flex items-center gap-1.5">SDS Displayed Percentage <span class="text-[#f04438] -ml-0.5">*</span>
+              <span class="tip text-[#98a2b3]">${I.help}<span class="tip-pop">The concentration range shown on the published SDS document. Required before searching.</span></span>
             </label>
-            <input id="pdf-input" class="field" placeholder="e.g., 1.0" autocomplete="off" />
+            <input id="pdf-input" class="field" placeholder="e.g., 1.0" autocomplete="off" required />
           </div>
         </div>
         <button id="search-btn" class="btn-soft w-full mt-5 !py-3" onclick="searchChemical()">${I.search} Search Chemical</button>
         <div id="found-panel"></div>
       </div>
-    </div>`);
+
+      <!-- tutorial card (Figma 3587-19987) -->
+      <div class="mt-auto pt-10 ml-auto w-[372px] anim-fade-up delay-2" id="add-tutorial">
+        <div class="relative" id="tutorial-card">
+          <button class="absolute -top-1 right-0 text-[#98989b] hover:text-[#1f1f26] transition-colors" onclick="dismissTutorial()">${I.x}</button>
+          <h3 class="text-[17px] font-semibold text-[#1f1f26] pr-7">How to fill in Section 1 of your SDS</h3>
+          <p class="text-[12px] leading-4 text-[#727284] mt-1.5">Follow this step-by-step tutorial to complete Section 1 of your SDS, including product details, company info, regulations, and emergency contacts.</p>
+          <div class="video-thumb mt-3.5 h-[185px]" onclick="playTutorial(this)">
+            <svg viewBox="0 0 334 186" class="w-full h-full" preserveAspectRatio="xMidYMid slice">
+              <defs><linearGradient id="vg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3c4a63"/><stop offset=".55" stop-color="#5b6d8c"/><stop offset="1" stop-color="#8fa0b8"/></linearGradient></defs>
+              <rect width="334" height="186" fill="url(#vg2)"/>
+              <rect x="18" y="60" width="120" height="86" rx="6" fill="#c9d2de"/>
+              <rect x="26" y="68" width="104" height="30" rx="4" fill="#94a3b8"/>
+              <circle cx="44" cy="116" r="7" fill="#ef4444"/><circle cx="64" cy="116" r="7" fill="#f7c948"/>
+              <rect x="84" y="108" width="44" height="16" rx="3" fill="#64748b"/>
+              <path d="M225 58c-10 0-18 9-18 22v66h52v-66c0-13-8-22-18-22h-16z" fill="#27364d"/>
+              <circle cx="233" cy="44" r="13" fill="#e8c39e"/>
+              <path d="M220 36c0-7 6-12 13-12s13 5 13 12l-4 4h-18l-4-4z" fill="#f1f5f9"/>
+              <rect x="186" y="92" width="34" height="6" rx="3" fill="#1e293b" transform="rotate(18 186 92)"/>
+              <rect x="166" y="98" width="40" height="26" rx="3" fill="#cbd5e1"/>
+              <rect x="170" y="102" width="32" height="14" rx="2" fill="#475569"/>
+            </svg>
+            <span class="absolute top-2.5 left-2.5 text-[10px] font-semibold text-[#5c67f9] bg-[#d2d3fe] px-2 py-1 rounded-md">Tutorial</span>
+            <div class="play">${I.play}</div>
+            <div class="absolute bottom-0 inset-x-0 px-3 pb-2.5 pt-6 bg-gradient-to-t from-black/55 to-transparent flex items-center gap-2">
+              <span class="text-[9px] text-white font-medium" id="vid-time">0.00</span>
+              <div class="flex-1 h-[3px] bg-white/30 rounded-full overflow-hidden"><div class="h-full bg-[#5c67f9] rounded-full transition-all duration-300" id="vid-bar" style="width:6%"></div></div>
+              <span class="text-[9px] text-white font-medium">1.04</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>`, { drawer: true });
   modalCtx.ov = ov;
   setTimeout(() => ov.querySelector("#cas-input").focus(), 80);
-  ov.querySelector("#cas-input").addEventListener("keydown", (e) => { if (e.key === "Enter") searchChemical(); });
+  attachChemSuggest(ov.querySelector("#cas-input"));
+  // clear error state as soon as the user types
+  ["actual-input", "pdf-input", "cas-input"].forEach((id) =>
+    ov.querySelector("#" + id).addEventListener("input", (e) => e.target.classList.remove("field-error"))
+  );
+}
+
+/* Live chemical suggestions while typing a CAS number or name */
+function attachChemSuggest(input) {
+  const wrap = input.closest(".relative");
+  let pop = null, items = [], active = -1;
+  const hide = () => { if (pop) { pop.remove(); pop = null; items = []; active = -1; } };
+
+  const mark = (text, q) => {
+    const idx = text.toLowerCase().indexOf(q.toLowerCase());
+    if (idx < 0) return esc(text);
+    return esc(text.slice(0, idx)) + "<b>" + esc(text.slice(idx, idx + q.length)) + "</b>" + esc(text.slice(idx + q.length));
+  };
+
+  const pick = (cas) => {
+    hide();
+    input.value = cas;
+    searchChemical();
+  };
+
+  const setActive = (i) => {
+    active = i;
+    items.forEach((el, n) => el.classList.toggle("active", n === active));
+    if (items[active]) items[active].scrollIntoView({ block: "nearest" });
+  };
+
+  const render = () => {
+    const q = input.value.trim();
+    hide();
+    if (!q) return;
+    const matches = Object.values(CAS_DB)
+      .filter((c) => c.cas.startsWith(q) || c.name.toLowerCase().includes(q.toLowerCase()))
+      .slice(0, 5);
+    pop = document.createElement("div");
+    pop.className = "suggest-pop";
+    if (matches.length) {
+      pop.innerHTML =
+        `<div class="sg-head">Matching chemicals</div>` +
+        matches.map((c) => `
+          <div class="suggest-item" data-cas="${c.cas}">
+            <span class="w-8 h-8 rounded-lg bg-[#eef0fe] text-[#5c67f9] flex items-center justify-center shrink-0">${I.flask}</span>
+            <span class="sg-text">${mark(c.name, q)} <span class="text-[#98a2b3]">· CAS ${mark(c.cas, q)}</span></span>
+            <span class="sg-add">${I.plus}</span>
+          </div>`).join("");
+      items = [...pop.querySelectorAll(".suggest-item")];
+      items.forEach((el) => {
+        el.addEventListener("mousedown", (ev) => { ev.preventDefault(); pick(el.dataset.cas); });
+        el.addEventListener("mouseenter", () => setActive(items.indexOf(el)));
+      });
+    } else {
+      pop.innerHTML = `<div class="suggest-empty">${I.search}<span>No match for “${esc(q)}” — press <b style="color:#5c67f9">Enter</b> to search anyway</span></div>`;
+      items = [];
+    }
+    active = -1;
+    wrap.appendChild(pop);
+  };
+
+  input.addEventListener("input", render);
+  input.addEventListener("focus", () => { if (input.value.trim()) render(); });
+  input.addEventListener("blur", () => setTimeout(hide, 140));
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" && items.length) { e.preventDefault(); setActive(Math.min(active + 1, items.length - 1)); }
+    else if (e.key === "ArrowUp" && items.length) { e.preventDefault(); setActive(Math.max(active - 1, 0)); }
+    else if (e.key === "Escape") hide();
+    else if (e.key === "Enter") {
+      e.preventDefault();
+      if (active >= 0 && items[active]) pick(items[active].dataset.cas);
+      else { hide(); searchChemical(); }
+    }
+  });
 }
 
 function searchChemical() {
   const q = document.getElementById("cas-input").value.trim().toLowerCase();
   const input = document.getElementById("cas-input");
   if (!q) { input.classList.add("field-error"); input.focus(); return; }
+
+  // Actual % and SDS Displayed % are required before searching
+  const actual = document.getElementById("actual-input");
+  const pdf = document.getElementById("pdf-input");
+  let missing = null;
+  [actual, pdf].forEach((f) => {
+    const empty = !f.value.trim();
+    f.classList.toggle("field-error", empty);
+    if (empty && !missing) missing = f;
+  });
+  if (missing) {
+    toast("Please fill in Actual Percentage and SDS Displayed Percentage first", "warn");
+    missing.focus();
+    return;
+  }
   const btn = document.getElementById("search-btn");
   const panel = document.getElementById("found-panel");
 
@@ -275,16 +503,32 @@ function verifyChemical() {
   }, 1750);
 }
 
-/* ============ chemical drawer ============ */
-let drawerCtx = null; // { chem, isNew, ov }
+/* ============ chemical drawer — step wizard (Figma 3587-20757 → 3590-22606) ============ */
+let drawerCtx = null; // { chem, isNew, ov, step }
+
+// leaf icon for the Ecotoxicity step (green square in Figma)
+I.leaf = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 4c-8 0-13 4-13 10a6 6 0 0 0 6 6c6 0 7-8 7-16Z"/><path d="M5 20c2-5 5-8 9-10"/></svg>`;
+
+const DRAWER_STEPS = [
+  { key: "hcode", label: "H Code" },
+  { key: "exposure", label: "Exposure" },
+  { key: "tox", label: "Toxicology" },
+  { key: "eco", label: "Ecotoxicity" },
+];
 
 function openDrawer(existingId, draftChem) {
   const isNew = !existingId;
   const chem = isNew ? draftChem : State.data.chemicals.find((c) => c.id === existingId);
   drawerCtx = { chem, isNew };
+  // Chemical review — always the full overview drawer (Figma 3498-16584),
+  // for both newly verified chemicals and edits from the table.
+  openReviewDrawer(chem);
+}
 
+/* ---- review mode: all sections stacked, Save & Close in header (Figma 3498-16584) ---- */
+function openReviewDrawer(chem) {
   const ov = openOverlay(`
-    <div class="drawer bg-white w-[860px] max-w-[95vw] h-full shadow-2xl flex flex-col">
+    <div class="drawer bg-white w-[860px] max-w-[95vw] my-2.5 mr-2.5 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
       <div class="flex items-center justify-between px-6 py-4 border-b border-[#eef0f3]">
         <div class="flex items-center gap-4">
           <button class="icon-btn !p-2 border border-[#e2e5e9] rounded-full" onclick="closeOverlay(this.closest('.overlay'))">${I.x}</button>
@@ -297,18 +541,15 @@ function openDrawer(existingId, draftChem) {
       </div>
       <div class="px-6 pt-4">
         <div class="tabbar" id="drawer-tabs">
-          <div class="tab active" data-target="sec-hcode">H Code</div>
-          <div class="tab" data-target="sec-exposure">Exposure</div>
-          <div class="tab" data-target="sec-tox">Toxicology</div>
-          <div class="tab" data-target="sec-eco">Ecotoxicity</div>
+          ${DRAWER_STEPS.map((s, i) => `<div class="tab ${i === 0 ? "active" : ""}" data-target="sec-${s.key}">${s.label}</div>`).join("")}
         </div>
       </div>
       <div id="drawer-body" class="nice-scroll flex-1 overflow-y-auto px-6 py-5 space-y-7"></div>
     </div>`, { drawer: true });
   drawerCtx.ov = ov;
-  renderDrawerBody();
+  renderReviewBody();
 
-  // tab scrolling
+  // tabs scroll to their section
   ov.querySelectorAll(".tab").forEach((t) =>
     t.addEventListener("click", () => {
       ov.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
@@ -318,16 +559,7 @@ function openDrawer(existingId, draftChem) {
   );
 }
 
-const SECTION_HEAD = (icon, iconBg, title, sub) => `
-  <div class="flex items-start gap-3 mb-3">
-    <div class="w-9 h-9 rounded-lg ${iconBg} text-white flex items-center justify-center shrink-0 mt-0.5">${icon}</div>
-    <div>
-      <h4 class="text-[16px] font-semibold text-[#0a0b19]">${title}</h4>
-      <p class="text-[12px] text-[#727284]">${sub}</p>
-    </div>
-  </div>`;
-
-function renderDrawerBody() {
+function renderReviewBody() {
   const c = drawerCtx.chem;
   document.getElementById("drawer-body").innerHTML = `
     <!-- H CODE — raised above sibling sections so the code-suggest dropdown never paints under the Exposure table -->
@@ -342,41 +574,17 @@ function renderDrawerBody() {
       </div>
     </section>
 
-    <!-- EXPOSURE -->
-    <section id="sec-exposure" class="anim-fade-up delay-1 relative z-0">
-      ${SECTION_HEAD(I.warn, "bg-[#f79009]", "Exposure Parameters", "Edit inline; click outside to save locally.")}
-      <div class="border border-[#e2e5e9] rounded-xl overflow-hidden bg-white">
-        <div class="grid grid-cols-[1fr_1fr_1fr_72px] bg-[#f7f8fa] border-b border-[#e2e5e9] px-4 py-2.5 text-[14px] font-medium text-[#6a7282]">
-          <span>Method</span><span>Regulation</span><span>Limit Value</span><span></span>
-        </div>
-        <div id="exposure-rows"></div>
-        <button class="w-full py-3 text-[#667085] font-medium text-[15px] hover:bg-[#fafbfe] hover:text-[#5c67f9] transition-colors flex items-center justify-center gap-2" onclick="addRow('exposure')">${I.plus} Add New</button>
-      </div>
-    </section>
+    <div class="anim-fade-up delay-1 relative z-0">${TABLE_STEP("exposure",
+      SECTION_HEAD(I.warn, "bg-[#f79009]", "Exposure Parameters", "Edit inline; click outside to save locally."),
+      "grid-cols-[1fr_1fr_1fr_72px]", ["Method", "Regulation", "Limit Value"]).replace('<section class="anim-fade-up">', '<section id="sec-exposure">')}</div>
 
-    <!-- TOXICOLOGY -->
-    <section id="sec-tox" class="anim-fade-up delay-2 relative z-0">
-      ${SECTION_HEAD(I.flask, "bg-[#f63d68]", "Toxicological", "Edit inline; click outside to save locally.")}
-      <div class="border border-[#e2e5e9] rounded-xl overflow-hidden bg-white">
-        <div class="grid grid-cols-[1fr_1fr_1fr_1fr_72px] bg-[#f7f8fa] border-b border-[#e2e5e9] px-4 py-2.5 text-[14px] font-medium text-[#6a7282]">
-          <span>Result</span><span>Dose</span><span>Species</span><span>Exposure</span><span></span>
-        </div>
-        <div id="tox-rows"></div>
-        <button class="w-full py-3 text-[#667085] font-medium text-[15px] hover:bg-[#fafbfe] hover:text-[#5c67f9] transition-colors flex items-center justify-center gap-2" onclick="addRow('tox')">${I.plus} Add New</button>
-      </div>
-    </section>
+    <div class="anim-fade-up delay-2 relative z-0">${TABLE_STEP("tox",
+      SECTION_HEAD(I.flask, "bg-[#f63d68]", "Toxicological", "Edit inline; click outside to save locally."),
+      "grid-cols-[1fr_1fr_1fr_1fr_72px]", ["Result", "Dose", "Species", "Exposure"]).replace('<section class="anim-fade-up">', '<section id="sec-tox">')}</div>
 
-    <!-- ECOTOXICITY -->
-    <section id="sec-eco" class="anim-fade-up delay-3 pb-8 relative z-0">
-      ${SECTION_HEAD(I.shieldCheck, "bg-[#12b76a]", "Ecotoxicity", "Edit inline; click outside to save locally.")}
-      <div class="border border-[#e2e5e9] rounded-xl overflow-hidden bg-white">
-        <div class="grid grid-cols-[1.4fr_.8fr_1fr_.8fr_72px] bg-[#f7f8fa] border-b border-[#e2e5e9] px-4 py-2.5 text-[14px] font-medium text-[#6a7282]">
-          <span>Species</span><span>Result</span><span>Value</span><span>Duration</span><span></span>
-        </div>
-        <div id="eco-rows"></div>
-        <button class="w-full py-3 text-[#667085] font-medium text-[15px] hover:bg-[#fafbfe] hover:text-[#5c67f9] transition-colors flex items-center justify-center gap-2" onclick="addRow('eco')">${I.plus} Add New</button>
-      </div>
-    </section>`;
+    <div class="anim-fade-up delay-3 relative z-0 pb-8">${TABLE_STEP("eco",
+      SECTION_HEAD(I.leaf, "bg-[#12b76a]", "Ecotoxicity", "Edit inline; click outside to save locally."),
+      "grid-cols-[1.4fr_.8fr_1fr_.8fr_72px]", ["Species", "Result", "Value", "Duration"]).replace('<section class="anim-fade-up">', '<section id="sec-eco">')}</div>`;
 
   renderHCodes();
   renderDataRows("exposure", ["method", "regulation", "limit"]);
@@ -390,11 +598,33 @@ function renderDrawerBody() {
   });
 }
 
+const SECTION_HEAD = (icon, iconBg, title, sub) => `
+  <div class="flex items-start gap-3 mb-3">
+    <div class="w-9 h-9 rounded-lg ${iconBg} text-white flex items-center justify-center shrink-0 mt-0.5">${icon}</div>
+    <div>
+      <h4 class="text-[16px] font-semibold text-[#0a0b19]">${title}</h4>
+      <p class="text-[12px] text-[#727284]">${sub}</p>
+    </div>
+  </div>`;
+
+const TABLE_STEP = (kind, head, gridCls, cols) => `
+  <section class="anim-fade-up">
+    ${head}
+    <div class="border border-[#e2e5e9] rounded-xl overflow-hidden bg-white">
+      <div class="grid ${gridCls} bg-[#f7f8fa] border-b border-[#e2e5e9] px-4 py-2.5 text-[14px] font-medium text-[#6a7282]">
+        ${cols.map((c) => `<span>${c}</span>`).join("")}<span></span>
+      </div>
+      <div id="${kind}-rows"></div>
+      <div id="${kind}-draft"></div>
+      <button id="${kind}-addbtn" class="w-full py-3 text-[#667085] font-medium text-[15px] border-t border-dashed border-[#e2e5e9] hover:bg-[#fafbfe] hover:text-[#5c67f9] transition-colors flex items-center justify-center gap-2" onclick="addRow('${kind}')">${I.plus} Add New</button>
+    </div>
+  </section>`;
+
 function renderHCodes(animateLast) {
   const grid = document.getElementById("hcode-grid");
   const list = drawerCtx.chem.hcodes;
   grid.innerHTML = list.map((h, i) => `
-    <div class="code-card ${i === 0 || (animateLast && i === list.length - 1) ? "anim-scale-in" : ""} ${i === 0 || i === 3 ? "selected" : ""}">
+    <div class="code-card ${i === 0 || (animateLast && i === list.length - 1) ? "anim-scale-in" : ""}">
       ${hzBadge(h.code, h.tone)}
       <span class="text-[12px] font-medium text-[#727284] leading-4 line-clamp-2">${esc(h.text)}</span>
       <span class="x" onclick="removeHCode(this, ${i})">${I.x}</span>
@@ -407,35 +637,89 @@ function removeHCode(el, i) {
 }
 
 const ROW_GRID = { exposure: "grid-cols-[1fr_1fr_1fr_72px]", tox: "grid-cols-[1fr_1fr_1fr_1fr_72px]", eco: "grid-cols-[1.4fr_.8fr_1fr_.8fr_72px]" };
+const DRAFT_GRID = { exposure: "grid-cols-3", tox: "grid-cols-4", eco: "grid-cols-4" };
+const KIND_FIELDS = { exposure: ["method", "regulation", "limit"], tox: ["result", "dose", "species", "exposure"], eco: ["species", "result", "value", "duration"] };
+const FIELD_LABELS = {
+  method: "Method", regulation: "Regulation", limit: "Limit Value",
+  result: "Result", dose: "Dose", species: "Species", exposure: "Exposure",
+  value: "Value", duration: "Duration",
+};
+const FIELD_PLACEHOLDERS = {
+  method: "e.g., TWA", regulation: "e.g., OSHA PEL", limit: "e.g., 750 ppm",
+  result: "e.g., LD50", dose: "e.g., 5800mg/kg", species: "e.g., Rat", exposure: "e.g., Oral",
+  value: "e.g., 5540 mg/L", duration: "e.g., 96 hours",
+};
 
 function renderDataRows(kind, fields) {
   const host = document.getElementById(`${kind}-rows`);
   const rows = drawerCtx.chem[kind];
-  const PLACEHOLDERS = {
-    method: "e.g., TWA", regulation: "e.g., OSHA PEL", limit: "e.g., 750 ppm",
-    result: "e.g., LD50", dose: "e.g., 5800mg/kg", species: "e.g., Rat", exposure: "e.g., Oral",
-    value: "e.g., 5540 mg/L", duration: "e.g., 96 hours",
-  };
   host.innerHTML = rows.map((r, i) => `
     <div class="grid ${ROW_GRID[kind]} items-center gap-2 px-4 py-2.5 border-b border-[#eef0f3] text-[14px] anim-row-in">
-      ${fields.map((f) => `<input class="cell-input" value="${esc(r[f] || "")}" placeholder="${PLACEHOLDERS[f] || "—"}" onblur="drawerCtx.chem['${kind}'][${i}]['${f}']=this.value" />`).join("")}
+      ${fields.map((f) => `<input class="cell-input" value="${esc(r[f] || "")}" placeholder="${FIELD_PLACEHOLDERS[f] || "—"}" onblur="drawerCtx.chem['${kind}'][${i}]['${f}']=this.value" />`).join("")}
       <span class="flex justify-end gap-1">
         <button class="icon-btn" title="Edit">${I.pencil}</button>
-        <button class="icon-btn danger" title="Delete" onclick="deleteRow('${kind}', ${i}, '${fields.join(",")}')">${I.trash}</button>
+        <button class="icon-btn danger" title="Delete" onclick="deleteRow('${kind}', ${i})">${I.trash}</button>
       </span>
     </div>`).join("");
 }
+
+// "Add New" opens an inline draft editor with labelled inputs + Cancel/Add (Figma)
 function addRow(kind) {
-  const fields = { exposure: ["method", "regulation", "limit"], tox: ["result", "dose", "species", "exposure"], eco: ["species", "result", "value", "duration"] }[kind];
-  drawerCtx.chem[kind].push(Object.fromEntries(fields.map((f) => [f, ""])));
-  renderDataRows(kind, fields);
-  const host = document.getElementById(`${kind}-rows`);
-  const inputs = host.lastElementChild.querySelectorAll("input");
-  inputs[0] && inputs[0].focus();
+  const draft = document.getElementById(`${kind}-draft`);
+  if (draft.dataset.open === "1") return; // already editing
+  draft.dataset.open = "1";
+  document.getElementById(`${kind}-addbtn`).style.display = "none";
+  const fields = KIND_FIELDS[kind];
+  draft.innerHTML = `
+    <div class="draft-row border-t border-dashed border-[#e2e5e9] px-4 py-4 anim-fade-in bg-[#fbfbff]">
+      <div class="grid ${DRAFT_GRID[kind]} gap-3">
+        ${fields.map((f) => `
+          <div>
+            <label class="block text-[13px] font-medium text-[#45454d] mb-1.5">${FIELD_LABELS[f]}</label>
+            <input class="cell-input" data-f="${f}" placeholder="${FIELD_PLACEHOLDERS[f]}" />
+          </div>`).join("")}
+      </div>
+      <div class="flex justify-end gap-2.5 mt-3.5">
+        <button class="btn-secondary !py-2 !px-5" onclick="cancelAddRow('${kind}')">${I.x} Cancel</button>
+        <button class="btn-primary !py-2 !px-5" onclick="confirmAddRow('${kind}')">${I.plus} Add</button>
+      </div>
+    </div>`;
+  const first = draft.querySelector("input");
+  first && first.focus();
+  draft.querySelectorAll("input").forEach((inp) => {
+    inp.addEventListener("input", () => inp.classList.remove("field-error"));
+    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") confirmAddRow(kind); if (e.key === "Escape") cancelAddRow(kind); });
+  });
 }
-function deleteRow(kind, i, fieldsCsv) {
+
+function confirmAddRow(kind) {
+  const draft = document.getElementById(`${kind}-draft`);
+  const fields = KIND_FIELDS[kind];
+  const vals = {};
+  let anyEmpty = false, firstEmpty = null;
+  draft.querySelectorAll("input").forEach((inp) => {
+    vals[inp.dataset.f] = inp.value.trim();
+    if (!inp.value.trim()) { anyEmpty = true; inp.classList.add("field-error"); if (!firstEmpty) firstEmpty = inp; }
+  });
+  if (anyEmpty) { toast("Please fill in all fields for this row", "warn"); firstEmpty.focus(); return; }
+  drawerCtx.chem[kind].push(vals);
+  clearDraft(kind);
+  renderDataRows(kind, fields);
+  toast("Row added", "success");
+}
+
+function cancelAddRow(kind) { clearDraft(kind); }
+
+function clearDraft(kind) {
+  const draft = document.getElementById(`${kind}-draft`);
+  draft.dataset.open = "";
+  draft.innerHTML = "";
+  document.getElementById(`${kind}-addbtn`).style.display = "";
+}
+
+function deleteRow(kind, i) {
   drawerCtx.chem[kind].splice(i, 1);
-  renderDataRows(kind, fieldsCsv.split(","));
+  renderDataRows(kind, KIND_FIELDS[kind]);
 }
 
 /* ============ missing-data check + save ============ */
