@@ -50,10 +50,13 @@
         <button class="btn-primary mt-5 anim-fade-up delay-3" onclick="openAddChemical()"><span id="plus-ic"></span> Add Camical</button>
       </div>
 
+      <!-- previously generated final hazard code (saved state — Figma 3726-13678) -->
+      <div id="final-hazard-panel" class="border-t border-[#e2e5e9] bg-[#fbfbfc] px-5 py-5" style="display:none"></div>
+
       <!-- footer -->
       <div id="table-footer" class="border-t border-[#e2e5e9] bg-white px-5 py-4 items-center justify-between" style="display:none">
         <p class="text-[15px]"><span class="font-semibold text-[#1f1f26]" id="chem-count">0 chemicals added</span> <span class="text-[#98989b]">· Ready to generate</span></p>
-        <button class="btn-primary" onclick="openMixtureState()">Generate Final Hazard <span id="flask-ic"></span></button>
+        <button id="generate-btn" class="btn-primary" onclick="openMixtureState()">Generate Final Hazard <span id="flask-ic"></span></button>
       </div>
     </section>
   </main>
@@ -95,6 +98,103 @@ function renderTable() {
       </span>
     </div>`;
   }).join("");
+
+  renderFinalHazardPanel();
+}
+
+/* ============ saved final-hazard panel + footer button (Figma 3726-13678) ============ */
+let hazardPanelOpen = true;
+
+function hasSavedHazard() {
+  return Array.isArray(State.data.finalHazard) && State.data.finalHazard.length > 0;
+}
+
+function renderFinalHazardPanel() {
+  const panel = document.getElementById("final-hazard-panel");
+  const genBtn = document.getElementById("generate-btn");
+  const saved = hasSavedHazard() && State.data.chemicals.length > 0;
+
+  // footer button reflects whether a hazard code already exists
+  genBtn.innerHTML = saved
+    ? `Regenerate Final Hazard <span>${I.flask}</span>`
+    : `Generate Final Hazard <span>${I.flask}</span>`;
+  genBtn.setAttribute("onclick", saved ? "openRegenerateModal()" : "openMixtureState()");
+
+  if (!saved) { panel.style.display = "none"; return; }
+  panel.style.display = "block";
+
+  const groups = groupHazardCodes(State.data.finalHazard);
+  const when = State.data.finalHazardSavedAt
+    ? new Date(State.data.finalHazardSavedAt).toLocaleString("en-US", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+    : "";
+  const GROUPS = [
+    { key: "2", title: "Physical hazards (H2xx)", cls: "text-[#3f43af]" },
+    { key: "3", title: "Health hazards (H3xx)", cls: "text-[#b42318]" },
+    { key: "4", title: "Environmental hazards (H4xx)", cls: "text-[#067647]" },
+  ];
+
+  panel.innerHTML = `
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <span class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#067647] bg-[#ecfdf3] border border-[#abefc6] rounded-full px-2.5 py-1">${I.check} Saved</span>
+        <span class="text-[15px] font-semibold text-[#1f1f26]">Previously Generated Final Hazard Code</span>
+        <span class="text-[13px] text-[#727284]">- ${when}</span>
+      </div>
+      <button class="flex items-center gap-1.5 text-[13px] font-medium text-[#45454d] hover:text-[#5c67f9] transition-colors" onclick="toggleHazardPanel()">
+        <span id="hz-toggle-ic"></span> <span id="hz-toggle-label">${hazardPanelOpen ? "Hide" : "Show"}</span>
+        <span class="transition-transform ${hazardPanelOpen ? "" : "rotate-180"}" id="hz-toggle-chev">${I.chevron}</span>
+      </button>
+    </div>
+    <div id="hz-panel-body" class="grid grid-cols-1 lg:grid-cols-3 gap-3.5 mt-4" style="${hazardPanelOpen ? "" : "display:none"}">
+      ${GROUPS.map((g) => `
+        <div class="border border-[#e2e5e9] rounded-2xl bg-white p-4">
+          <h4 class="text-[15px] font-semibold ${g.cls} mb-3">${g.title}</h4>
+          ${groups[g.key].length
+            ? `<div class="flex flex-wrap gap-1.5">${groups[g.key].map((c) => hzBadge(c.code, c.tone)).join("")}</div>`
+            : `<p class="text-[12px] text-[#98989b]">No codes in this group.</p>`}
+        </div>`).join("")}
+    </div>`;
+  document.getElementById("hz-toggle-ic").innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="2.6"/></svg>`;
+}
+
+function toggleHazardPanel() {
+  hazardPanelOpen = !hazardPanelOpen;
+  const body = document.getElementById("hz-panel-body");
+  if (!body) return;
+  body.style.display = hazardPanelOpen ? "" : "none";
+  document.getElementById("hz-toggle-label").textContent = hazardPanelOpen ? "Hide" : "Show";
+  document.getElementById("hz-toggle-chev").classList.toggle("rotate-180", !hazardPanelOpen);
+}
+
+/* ============ regenerate final hazard (Figma 3727-14037) ============ */
+function openRegenerateModal() {
+  openOverlay(`
+    <div class="modal bg-white rounded-2xl shadow-2xl w-[490px] max-w-[92vw] p-7 text-center relative">
+      <button class="icon-btn absolute top-4 right-4" onclick="closeOverlay(this.closest('.overlay'))">${I.x}</button>
+      <div class="w-[62px] h-[62px] rounded-full bg-[#eef0fe] text-[#5c67f9] flex items-center justify-center mx-auto anim-pop">${I.flask}</div>
+      <h3 class="text-[22px] font-semibold text-[#1f1f26] mt-4">Regenerate Final Hazard?</h3>
+      <p class="text-[14px] text-[#45454d] mt-2 leading-5">You have made changes to your ingredient list. Regenerating will <b>replace your existing Final Hazard Code</b> with a new one based on the updated data.</p>
+      <div class="grid grid-cols-2 gap-3 mt-7">
+        <button class="btn-secondary !py-3" onclick="closeOverlay(this.closest('.overlay'))">${I.x} Cancel</button>
+        <button class="btn-primary !py-3" onclick="confirmRegenerate(this)">Yes, Regenerate ${I.flask}</button>
+      </div>
+    </div>`);
+}
+
+function confirmRegenerate(btn) {
+  // only a genuinely new chemical (id not present at last generation) re-runs the full procedure
+  const snapIds = (State.data.finalHazardChemSig || "").split(",").filter(Boolean);
+  const addedNew = State.data.chemicals.some((c) => !snapIds.includes(c.id));
+  closeOverlay(btn.closest(".overlay"), () => {
+    if (addedNew) {
+      // new chemical(s) since last generation → run the full procedure again
+      openMixtureState();
+    } else {
+      // nothing new → straight to the next step
+      toast("No new chemicals — continuing to Physical Properties", "success");
+      setTimeout(() => (window.location.href = "section-9.html"), 600);
+    }
+  });
 }
 
 function removeChemical(id) {
@@ -515,7 +615,8 @@ const TABLE_STEP = (kind, head, gridCls, cols) => `
         ${cols.map((c) => `<span>${c}</span>`).join("")}<span></span>
       </div>
       <div id="${kind}-rows"></div>
-      <button class="w-full py-3 text-[#667085] font-medium text-[15px] border-t border-dashed border-[#e2e5e9] hover:bg-[#fafbfe] hover:text-[#5c67f9] transition-colors flex items-center justify-center gap-2" onclick="addRow('${kind}')">${I.plus} Add New</button>
+      <div id="${kind}-draft"></div>
+      <button id="${kind}-addbtn" class="w-full py-3 text-[#667085] font-medium text-[15px] border-t border-dashed border-[#e2e5e9] hover:bg-[#fafbfe] hover:text-[#5c67f9] transition-colors flex items-center justify-center gap-2" onclick="addRow('${kind}')">${I.plus} Add New</button>
     </div>
   </section>`;
 
@@ -536,35 +637,89 @@ function removeHCode(el, i) {
 }
 
 const ROW_GRID = { exposure: "grid-cols-[1fr_1fr_1fr_72px]", tox: "grid-cols-[1fr_1fr_1fr_1fr_72px]", eco: "grid-cols-[1.4fr_.8fr_1fr_.8fr_72px]" };
+const DRAFT_GRID = { exposure: "grid-cols-3", tox: "grid-cols-4", eco: "grid-cols-4" };
+const KIND_FIELDS = { exposure: ["method", "regulation", "limit"], tox: ["result", "dose", "species", "exposure"], eco: ["species", "result", "value", "duration"] };
+const FIELD_LABELS = {
+  method: "Method", regulation: "Regulation", limit: "Limit Value",
+  result: "Result", dose: "Dose", species: "Species", exposure: "Exposure",
+  value: "Value", duration: "Duration",
+};
+const FIELD_PLACEHOLDERS = {
+  method: "e.g., TWA", regulation: "e.g., OSHA PEL", limit: "e.g., 750 ppm",
+  result: "e.g., LD50", dose: "e.g., 5800mg/kg", species: "e.g., Rat", exposure: "e.g., Oral",
+  value: "e.g., 5540 mg/L", duration: "e.g., 96 hours",
+};
 
 function renderDataRows(kind, fields) {
   const host = document.getElementById(`${kind}-rows`);
   const rows = drawerCtx.chem[kind];
-  const PLACEHOLDERS = {
-    method: "e.g., TWA", regulation: "e.g., OSHA PEL", limit: "e.g., 750 ppm",
-    result: "e.g., LD50", dose: "e.g., 5800mg/kg", species: "e.g., Rat", exposure: "e.g., Oral",
-    value: "e.g., 5540 mg/L", duration: "e.g., 96 hours",
-  };
   host.innerHTML = rows.map((r, i) => `
     <div class="grid ${ROW_GRID[kind]} items-center gap-2 px-4 py-2.5 border-b border-[#eef0f3] text-[14px] anim-row-in">
-      ${fields.map((f) => `<input class="cell-input" value="${esc(r[f] || "")}" placeholder="${PLACEHOLDERS[f] || "—"}" onblur="drawerCtx.chem['${kind}'][${i}]['${f}']=this.value" />`).join("")}
+      ${fields.map((f) => `<input class="cell-input" value="${esc(r[f] || "")}" placeholder="${FIELD_PLACEHOLDERS[f] || "—"}" onblur="drawerCtx.chem['${kind}'][${i}]['${f}']=this.value" />`).join("")}
       <span class="flex justify-end gap-1">
         <button class="icon-btn" title="Edit">${I.pencil}</button>
-        <button class="icon-btn danger" title="Delete" onclick="deleteRow('${kind}', ${i}, '${fields.join(",")}')">${I.trash}</button>
+        <button class="icon-btn danger" title="Delete" onclick="deleteRow('${kind}', ${i})">${I.trash}</button>
       </span>
     </div>`).join("");
 }
+
+// "Add New" opens an inline draft editor with labelled inputs + Cancel/Add (Figma)
 function addRow(kind) {
-  const fields = { exposure: ["method", "regulation", "limit"], tox: ["result", "dose", "species", "exposure"], eco: ["species", "result", "value", "duration"] }[kind];
-  drawerCtx.chem[kind].push(Object.fromEntries(fields.map((f) => [f, ""])));
-  renderDataRows(kind, fields);
-  const host = document.getElementById(`${kind}-rows`);
-  const inputs = host.lastElementChild.querySelectorAll("input");
-  inputs[0] && inputs[0].focus();
+  const draft = document.getElementById(`${kind}-draft`);
+  if (draft.dataset.open === "1") return; // already editing
+  draft.dataset.open = "1";
+  document.getElementById(`${kind}-addbtn`).style.display = "none";
+  const fields = KIND_FIELDS[kind];
+  draft.innerHTML = `
+    <div class="draft-row border-t border-dashed border-[#e2e5e9] px-4 py-4 anim-fade-in bg-[#fbfbff]">
+      <div class="grid ${DRAFT_GRID[kind]} gap-3">
+        ${fields.map((f) => `
+          <div>
+            <label class="block text-[13px] font-medium text-[#45454d] mb-1.5">${FIELD_LABELS[f]}</label>
+            <input class="cell-input" data-f="${f}" placeholder="${FIELD_PLACEHOLDERS[f]}" />
+          </div>`).join("")}
+      </div>
+      <div class="flex justify-end gap-2.5 mt-3.5">
+        <button class="btn-secondary !py-2 !px-5" onclick="cancelAddRow('${kind}')">${I.x} Cancel</button>
+        <button class="btn-primary !py-2 !px-5" onclick="confirmAddRow('${kind}')">${I.plus} Add</button>
+      </div>
+    </div>`;
+  const first = draft.querySelector("input");
+  first && first.focus();
+  draft.querySelectorAll("input").forEach((inp) => {
+    inp.addEventListener("input", () => inp.classList.remove("field-error"));
+    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") confirmAddRow(kind); if (e.key === "Escape") cancelAddRow(kind); });
+  });
 }
-function deleteRow(kind, i, fieldsCsv) {
+
+function confirmAddRow(kind) {
+  const draft = document.getElementById(`${kind}-draft`);
+  const fields = KIND_FIELDS[kind];
+  const vals = {};
+  let anyEmpty = false, firstEmpty = null;
+  draft.querySelectorAll("input").forEach((inp) => {
+    vals[inp.dataset.f] = inp.value.trim();
+    if (!inp.value.trim()) { anyEmpty = true; inp.classList.add("field-error"); if (!firstEmpty) firstEmpty = inp; }
+  });
+  if (anyEmpty) { toast("Please fill in all fields for this row", "warn"); firstEmpty.focus(); return; }
+  drawerCtx.chem[kind].push(vals);
+  clearDraft(kind);
+  renderDataRows(kind, fields);
+  toast("Row added", "success");
+}
+
+function cancelAddRow(kind) { clearDraft(kind); }
+
+function clearDraft(kind) {
+  const draft = document.getElementById(`${kind}-draft`);
+  draft.dataset.open = "";
+  draft.innerHTML = "";
+  document.getElementById(`${kind}-addbtn`).style.display = "";
+}
+
+function deleteRow(kind, i) {
   drawerCtx.chem[kind].splice(i, 1);
-  renderDataRows(kind, fieldsCsv.split(","));
+  renderDataRows(kind, KIND_FIELDS[kind]);
 }
 
 /* ============ missing-data check + save ============ */

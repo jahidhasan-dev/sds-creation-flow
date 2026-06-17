@@ -134,6 +134,8 @@ function saveHazardCode() {
   const btn = document.getElementById("save-btn");
   btnBusy(btn, "Saving hazard code…");
   State.data.finalHazard = finalCodes;
+  State.data.finalHazardSavedAt = Date.now();
+  State.data.finalHazardChemSig = chemSignature(); // snapshot to detect later additions
   State.save();
   setTimeout(() => {
     btn.innerHTML = `${I.check} Hazard Code Saved`;

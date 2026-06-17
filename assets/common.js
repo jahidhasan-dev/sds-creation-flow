@@ -355,3 +355,21 @@ function fmtCreated(ts) {
   return { date: `${date},`, time };
 }
 function uid() { return Math.random().toString(36).slice(2, 9); }
+
+// signature of the current chemical list — used to detect newly added chemicals
+function chemSignature() {
+  return (State.data.chemicals || []).map((c) => c.id).sort().join(",");
+}
+
+// group hazard codes by GHS family for the saved-hazard panel / final page
+function groupHazardCodes(codes) {
+  const fam = (code) => {
+    const m = String(code).match(/H(\d)/);
+    return m && ["2", "3", "4"].includes(m[1]) ? m[1] : "2";
+  };
+  return {
+    "2": (codes || []).filter((c) => fam(c.code) === "2"),
+    "3": (codes || []).filter((c) => fam(c.code) === "3"),
+    "4": (codes || []).filter((c) => fam(c.code) === "4"),
+  };
+}
