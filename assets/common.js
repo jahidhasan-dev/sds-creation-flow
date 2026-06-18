@@ -14,6 +14,7 @@ const State = {
     this.data.section9 ||= {};
     this.data.section14 ||= {};
     this.data.finalHazard ||= null;
+    this.data.savedSteps ||= {}; // { product, ingredient, physical, transport }
     return this.data;
   },
   save() { localStorage.setItem(STORE_KEY, JSON.stringify(this.data)); },
@@ -59,11 +60,107 @@ const hzBadge = (code, tone) => `<span class="hz ${TONE_CLASS[tone] || "hz-indig
 
 /* ---------- shell ---------- */
 const STEPS = [
-  { label: "Product Details", href: "section-1.html" },
-  { label: "Ingredient Details", href: "section-3.html" },
-  { label: "Physical Properties", href: "section-9.html" },
-  { label: "Transport Information", href: "section-14.html" },
+  { label: "Product Details", href: "section-1.html", key: "product" },
+  { label: "Ingredient Details", href: "section-3.html", key: "ingredient" },
+  { label: "Physical Properties", href: "section-9.html", key: "physical" },
+  { label: "Transport Information", href: "section-14.html", key: "transport" },
 ];
+
+/* ============================================================
+   Navigation guard — block leaving a section with unsaved data,
+   and prevent skipping ahead before earlier sections are saved.
+   ============================================================ */
+const Nav = {
+  stepIndex: 0,
+  // pages override these:
+  isDirty: () => false,   // unsaved edits present in the current section
+};
+function registerStep(index) { Nav.stepIndex = index; }
+function stepSaved(key) { return !!(State.data.savedSteps && State.data.savedSteps[key]); }
+function markStepSaved(key) {
+  State.data.savedSteps = State.data.savedSteps || {};
+  State.data.savedSteps[key] = true;
+  State.save();
+}
+function firstUnsavedUpTo(targetIdx) {
+  for (let i = 0; i < targetIdx; i++) if (!stepSaved(STEPS[i].key)) return i;
+  return -1;
+}
+
+// central entry point for any in-flow navigation attempt
+function guardedNavTo(targetIdx) {
+  const cur = Nav.stepIndex;
+  if (targetIdx === cur) return;
+  const lock = firstUnsavedUpTo(targetIdx); // earliest unsaved prerequisite (may be cur)
+  if (lock !== -1) {
+    if (lock === cur) showMustSaveModal();
+    else showLockedModal(lock);
+    return;
+  }
+  if (Nav.isDirty && Nav.isDirty()) {
+    showUnsavedModal(() => (window.location.href = STEPS[targetIdx].href));
+    return;
+  }
+  window.location.href = STEPS[targetIdx].href;
+}
+
+// leaving the flow entirely (e.g. Dashboard) — only the dirty check applies
+function guardedExit(href) {
+  if (Nav.isDirty && Nav.isDirty()) { showUnsavedModal(() => (window.location.href = href)); return; }
+  window.location.href = href;
+}
+
+/* ---- guard modals (styled like the missing-data warning) ---- */
+function guardModal({ title, body, buttons }) {
+  const ov = openOverlay(`
+    <div class="modal bg-white rounded-2xl shadow-2xl w-[480px] max-w-[92vw] p-7 text-center relative">
+      <button class="icon-btn absolute top-4 right-4" onclick="closeOverlay(this.closest('.overlay'))">${I.x}</button>
+      <div class="w-[62px] h-[62px] rounded-full bg-[#fdf2dc] text-[#f79009] flex items-center justify-center mx-auto anim-pop">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 2.8 19.5a1 1 0 0 0 .9 1.5h16.6a1 1 0 0 0 .9-1.5L12 3.5Z"/><path d="M12 10v4"/><path d="M12 17.3v.05"/></svg>
+      </div>
+      <h3 class="text-[22px] font-semibold text-[#1f1f26] mt-4">${title}</h3>
+      <p class="text-[14px] text-[#45454d] mt-2 leading-5">${body}</p>
+      <div class="grid ${buttons.length > 1 ? "grid-cols-2" : "grid-cols-1"} gap-3 mt-7" id="guard-btns"></div>
+    </div>`);
+  const host = ov.querySelector("#guard-btns");
+  buttons.forEach((b) => {
+    const el = document.createElement("button");
+    el.className = (b.primary ? "btn-primary" : "btn-secondary") + " !py-3";
+    el.innerHTML = b.label;
+    el.onclick = () => closeOverlay(ov, b.onClick);
+    host.appendChild(el);
+  });
+  return ov;
+}
+
+function showMustSaveModal() {
+  guardModal({
+    title: "Save Required",
+    body: "Please save this section before moving to another step. Your current entries haven’t been saved yet.",
+    buttons: [{ label: `Got it`, primary: true }],
+  });
+}
+function showUnsavedModal(onLeave) {
+  guardModal({
+    title: "Unsaved Changes",
+    body: "You have unsaved changes in this section. If you leave now, these changes will be lost.",
+    buttons: [
+      { label: `${I.x} Discard &amp; Leave`, onClick: onLeave },
+      { label: `Stay on Page`, primary: true },
+    ],
+  });
+}
+function showLockedModal(lockIdx) {
+  const name = STEPS[lockIdx].label;
+  guardModal({
+    title: "Complete Previous Section",
+    body: `Please complete and save <b>“${name}”</b> before continuing to this step.`,
+    buttons: [
+      { label: `Cancel` },
+      { label: `Go to ${name}`, primary: true, onClick: () => (window.location.href = STEPS[lockIdx].href) },
+    ],
+  });
+}
 
 function fmtToday() {
   return new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }).replace(" ", ", ").replace(",,", ",");
@@ -73,19 +170,20 @@ function fmtToday() {
  * opts: { step: 0..3, header: 'breadcrumb'|'welcome', crumb: 'Product Details' }
  */
 function renderShell(opts) {
+  registerStep(opts.step || 0);
   const collapseBtn = `<button class="w-8 h-8 rounded-full border border-[#e2e5e9] bg-white flex items-center justify-center text-[#727284] hover:text-[#5c67f9] hover:border-[#c7cdf9] transition-colors shadow-sm" title="Collapse">${I.collapse}</button>`;
   const headerLeft =
     opts.header === "welcome"
       ? `<div class="flex items-center gap-3">
-           <a href="dashboard.html" class="anim-fade-in">${I.logo}</a>
+           <a href="dashboard.html" class="anim-fade-in" onclick="event.preventDefault();guardedExit('dashboard.html')">${I.logo}</a>
            ${collapseBtn}
            <h1 class="text-[19px] font-semibold text-[#1f1f26]">Welcome to ExactSDS, Jahid</h1>
            <span class="text-[12px] text-[#727284] mt-[3px]">${fmtToday()}</span>
          </div>`
       : `<div class="flex items-center gap-3">
-           <a href="dashboard.html" class="anim-fade-in">${I.logo}</a>
+           <a href="dashboard.html" class="anim-fade-in" onclick="event.preventDefault();guardedExit('dashboard.html')">${I.logo}</a>
            ${collapseBtn}
-           <span class="text-[11px] text-[#727284]"><a href="dashboard.html" class="hover:text-[#5c67f9] transition-colors">Dashboard</a>&nbsp; &gt; ${opts.crumb || ""}</span>
+           <span class="text-[11px] text-[#727284]"><a href="dashboard.html" class="hover:text-[#5c67f9] transition-colors" onclick="event.preventDefault();guardedExit('dashboard.html')">Dashboard</a>&nbsp; &gt; ${opts.crumb || ""}</span>
          </div>`;
 
   document.getElementById("app-header").innerHTML = `
@@ -116,7 +214,7 @@ function renderShell(opts) {
       <div class="flex flex-col items-center justify-between h-full py-4">
         <div class="flex flex-col gap-2">
           ${rail.map((r) => r.href
-            ? `<a href="${r.href}" class="rail-btn ${r.active ? "active" : ""}" title="${r.title}">${r.icon}</a>`
+            ? `<a href="${r.href}" class="rail-btn ${r.active ? "active" : ""}" title="${r.title}" onclick="event.preventDefault();guardedExit('${r.href}')">${r.icon}</a>`
             : `<button class="rail-btn" title="${r.title}" onclick="toast('Demo: ${r.title} is outside this flow')">${r.icon}</button>`).join("")}
         </div>
         <button class="rail-btn !bg-[#eef0fe] !text-[#5c67f9] ring-1 ring-[#d2d3fe]" style="animation: floaty 3s ease-in-out infinite" title="Upgrade">${I.crown}</button>
@@ -136,7 +234,7 @@ function renderShell(opts) {
           : "text-[#98989b] font-medium";
       return `
         <div class="step ${cls}">
-          <a href="${s.href}" class="flex items-center gap-3 group">
+          <a href="${s.href}" class="flex items-center gap-3 group" onclick="event.preventDefault();guardedNavTo(${i})">
             <div class="step-dot">${i < opts.step ? `<span class="text-white">${I.check}</span>` : `<span class="core"></span>`}</div>
             <span class="text-[16px] leading-6 ${txt} group-hover:text-[#5c67f9] transition-colors">${s.label}</span>
           </a>

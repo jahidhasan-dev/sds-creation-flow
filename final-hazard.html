@@ -136,6 +136,7 @@ function saveHazardCode() {
   State.data.finalHazard = finalCodes;
   State.data.finalHazardSavedAt = Date.now();
   State.data.finalHazardChemSig = chemSignature(); // snapshot to detect later additions
+  markStepSaved("ingredient");
   State.save();
   setTimeout(() => {
     btn.innerHTML = `${I.check} Hazard Code Saved`;

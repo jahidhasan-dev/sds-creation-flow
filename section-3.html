@@ -362,36 +362,34 @@ function attachChemSuggest(input) {
   const render = () => {
     const q = input.value.trim();
     hide();
-    if (!q) return;
-    const matches = Object.values(CAS_DB)
-      .filter((c) => c.cas.startsWith(q) || c.name.toLowerCase().includes(q.toLowerCase()))
-      .slice(0, 5);
+    if (!q) return; // only surface suggestions once the user starts typing
+    // Show the whole chemical library; matches just float to the top + get highlighted.
+    const isMatch = (c) => c.cas.toLowerCase().includes(q.toLowerCase()) || c.name.toLowerCase().includes(q.toLowerCase());
+    const all = Object.values(CAS_DB);
+    const ordered = [...all].sort((a, b) => (isMatch(b) ? 1 : 0) - (isMatch(a) ? 1 : 0));
+    const matchCount = all.filter(isMatch).length;
+
     pop = document.createElement("div");
     pop.className = "suggest-pop";
-    if (matches.length) {
-      pop.innerHTML =
-        `<div class="sg-head">Matching chemicals</div>` +
-        matches.map((c) => `
-          <div class="suggest-item" data-cas="${c.cas}">
-            <span class="w-8 h-8 rounded-lg bg-[#eef0fe] text-[#5c67f9] flex items-center justify-center shrink-0">${I.flask}</span>
-            <span class="sg-text">${mark(c.name, q)} <span class="text-[#98a2b3]">· CAS ${mark(c.cas, q)}</span></span>
-            <span class="sg-add">${I.plus}</span>
-          </div>`).join("");
-      items = [...pop.querySelectorAll(".suggest-item")];
-      items.forEach((el) => {
-        el.addEventListener("mousedown", (ev) => { ev.preventDefault(); pick(el.dataset.cas); });
-        el.addEventListener("mouseenter", () => setActive(items.indexOf(el)));
-      });
-    } else {
-      pop.innerHTML = `<div class="suggest-empty">${I.search}<span>No match for “${esc(q)}” — press <b style="color:#5c67f9">Enter</b> to search anyway</span></div>`;
-      items = [];
-    }
+    pop.innerHTML =
+      `<div class="sg-head">${matchCount ? `${matchCount} match${matchCount === 1 ? "" : "es"} · all chemicals` : "No exact match · all chemicals"}</div>` +
+      ordered.map((c) => `
+        <div class="suggest-item ${isMatch(c) ? "" : "opacity-80"}" data-cas="${c.cas}">
+          <span class="w-8 h-8 rounded-lg bg-[#eef0fe] text-[#5c67f9] flex items-center justify-center shrink-0">${I.flask}</span>
+          <span class="sg-text">${mark(c.name, q)} <span class="text-[#98a2b3]">· CAS ${mark(c.cas, q)}</span></span>
+          <span class="sg-add">${I.plus}</span>
+        </div>`).join("");
+    items = [...pop.querySelectorAll(".suggest-item")];
+    items.forEach((el) => {
+      el.addEventListener("mousedown", (ev) => { ev.preventDefault(); pick(el.dataset.cas); });
+      el.addEventListener("mouseenter", () => setActive(items.indexOf(el)));
+    });
     active = -1;
     wrap.appendChild(pop);
   };
 
   input.addEventListener("input", render);
-  input.addEventListener("focus", () => { if (input.value.trim()) render(); });
+  input.addEventListener("focus", () => { if (input.value.trim()) render(); }); // only after typing
   input.addEventListener("blur", () => setTimeout(hide, 140));
   input.addEventListener("keydown", (e) => {
     if (e.key === "ArrowDown" && items.length) { e.preventDefault(); setActive(Math.min(active + 1, items.length - 1)); }
@@ -836,6 +834,15 @@ function confirmGenerate(btn) {
     setTimeout(() => { clearInterval(ticker); window.location.href = "final-hazard.html"; }, 2000);
   }, 600);
 }
+
+/* ----- unsaved-changes guard ----- */
+// Section 3 is "dirty" when there are ingredient changes not captured in a saved final hazard:
+// chemicals exist but no hazard saved yet, or the list changed since the last generation.
+Nav.isDirty = function () {
+  if (State.data.chemicals.length === 0) return false;
+  if (!hasSavedHazard()) return true;
+  return chemSignature() !== (State.data.finalHazardChemSig || "");
+};
 
 /* boot */
 renderTable();
