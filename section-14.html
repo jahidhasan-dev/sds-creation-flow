@@ -154,9 +154,17 @@ document.getElementById("s14-form").addEventListener("submit", (e) => {
     mode: mode.value,
     notDangerous: toggle.checked,
   });
+  markStepSaved("transport");
+  formDirty = false;
   State.save();
   runGeneration();
 });
+
+// ----- unsaved-changes guard -----
+let formDirty = false;
+const markDirty = () => { formDirty = true; };
+document.querySelectorAll("#s14-form .field").forEach((f) => { f.addEventListener("input", markDirty); f.addEventListener("change", markDirty); });
+Nav.isDirty = () => formDirty;
 
 const GEN_STEPS = [
   { label: "Compiling sections 1–16", icon: I.doc },

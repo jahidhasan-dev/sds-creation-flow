@@ -221,6 +221,8 @@ document.getElementById("s1-form").addEventListener("submit", (e) => {
     emergency: document.getElementById("emergency").value,
     hazard: document.querySelector(".choice-card.selected").dataset.hazard,
   });
+  markStepSaved("product");
+  formDirty = false;
   State.save();
 
   const btn = document.getElementById("s1-save");
@@ -236,6 +238,13 @@ document.getElementById("s1-form").addEventListener("submit", (e) => {
 document.querySelectorAll(".field").forEach((f) =>
   f.addEventListener("input", () => f.classList.remove("field-error"))
 );
+
+// ----- unsaved-changes guard -----
+let formDirty = false;
+const markDirty = () => { formDirty = true; };
+document.querySelectorAll("#s1-form .field").forEach((f) => { f.addEventListener("input", markDirty); f.addEventListener("change", markDirty); });
+document.querySelectorAll(".choice-card").forEach((c) => c.addEventListener("click", markDirty));
+Nav.isDirty = () => formDirty;
 </script>
 </body>
 </html>

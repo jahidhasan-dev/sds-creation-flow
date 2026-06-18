@@ -131,6 +131,8 @@ document.getElementById("s9-form").addEventListener("submit", (e) => {
     flash: document.getElementById("flash").value,
     extra: extraProps.filter((p) => p.name.trim() || p.value.trim()),
   });
+  markStepSaved("physical");
+  formDirty = false;
   State.save();
   const btn = document.getElementById("s9-save");
   btnBusy(btn, "Saving…");
@@ -140,6 +142,14 @@ document.getElementById("s9-form").addEventListener("submit", (e) => {
     setTimeout(() => (window.location.href = "section-14.html"), 650);
   }, 850);
 });
+
+// ----- unsaved-changes guard -----
+let formDirty = false;
+const markDirty = () => { formDirty = true; };
+document.querySelectorAll("#s9-form .field").forEach((f) => { f.addEventListener("input", markDirty); f.addEventListener("change", markDirty); });
+document.getElementById("extra-props").addEventListener("input", markDirty);
+document.querySelector('button[onclick="addProperty()"]').addEventListener("click", markDirty);
+Nav.isDirty = () => formDirty;
 </script>
 </body>
 </html>
