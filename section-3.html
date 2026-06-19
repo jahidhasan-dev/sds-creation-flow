@@ -844,6 +844,24 @@ Nav.isDirty = function () {
   return chemSignature() !== (State.data.finalHazardChemSig || "");
 };
 
+// When Section 3 was already saved and the ingredient list has since changed,
+// the user must regenerate the hazard codes before leaving — show that instead
+// of the generic "Unsaved Changes" notice.
+Nav.onUnsaved = function (proceed) {
+  if (hasSavedHazard()) {
+    guardModal({
+      title: "Regenerate Required",
+      body: "You’ve changed your ingredient list. Please regenerate the hazard codes first before moving to other sections.",
+      buttons: [
+        { label: "Cancel" },
+        { label: `Regenerate Now ${I.flask}`, primary: true, onClick: openRegenerateModal },
+      ],
+    });
+  } else {
+    showUnsavedModal(proceed);
+  }
+};
+
 /* boot */
 renderTable();
 </script>

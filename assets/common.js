@@ -98,7 +98,9 @@ function guardedNavTo(targetIdx) {
     return;
   }
   if (Nav.isDirty && Nav.isDirty()) {
-    showUnsavedModal(() => (window.location.href = STEPS[targetIdx].href));
+    const proceed = () => (window.location.href = STEPS[targetIdx].href);
+    if (typeof Nav.onUnsaved === "function") Nav.onUnsaved(proceed);
+    else showUnsavedModal(proceed);
     return;
   }
   window.location.href = STEPS[targetIdx].href;
@@ -106,7 +108,12 @@ function guardedNavTo(targetIdx) {
 
 // leaving the flow entirely (e.g. Dashboard) — only the dirty check applies
 function guardedExit(href) {
-  if (Nav.isDirty && Nav.isDirty()) { showUnsavedModal(() => (window.location.href = href)); return; }
+  if (Nav.isDirty && Nav.isDirty()) {
+    const proceed = () => (window.location.href = href);
+    if (typeof Nav.onUnsaved === "function") Nav.onUnsaved(proceed);
+    else showUnsavedModal(proceed);
+    return;
+  }
   window.location.href = href;
 }
 
