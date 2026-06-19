@@ -844,6 +844,28 @@ Nav.isDirty = function () {
   return chemSignature() !== (State.data.finalHazardChemSig || "");
 };
 
+// Section 3 isn't "saved" until the final hazard code is generated. When the user
+// has chemicals but hasn't generated yet and tries to advance, prompt them to
+// generate the final hazard code (instead of the generic "Save Required" message).
+Nav.onMustSave = function () {
+  if (State.data.chemicals.length === 0) {
+    guardModal({
+      title: "Add a Chemical First",
+      body: "Please add at least one chemical and generate the final hazard code before moving to the next section.",
+      buttons: [{ label: "Got it", primary: true }],
+    });
+    return;
+  }
+  guardModal({
+    title: "Generate Final Hazard",
+    body: "Before moving to the next section, please generate the final hazard code first.",
+    buttons: [
+      { label: "Cancel" },
+      { label: `Generate Now ${I.flask}`, primary: true, onClick: openMixtureState },
+    ],
+  });
+};
+
 // When Section 3 was already saved and the ingredient list has since changed,
 // the user must regenerate the hazard codes before leaving — show that instead
 // of the generic "Unsaved Changes" notice.

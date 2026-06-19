@@ -93,7 +93,7 @@ function guardedNavTo(targetIdx) {
   if (targetIdx === cur) return;
   const lock = firstUnsavedUpTo(targetIdx); // earliest unsaved prerequisite (may be cur)
   if (lock !== -1) {
-    if (lock === cur) showMustSaveModal();
+    if (lock === cur) { if (typeof Nav.onMustSave === "function") Nav.onMustSave(); else showMustSaveModal(); }
     else showLockedModal(lock);
     return;
   }
