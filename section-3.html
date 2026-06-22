@@ -541,6 +541,7 @@ function openReviewDrawer(chem) {
         <div class="tabbar" id="drawer-tabs">
           ${DRAWER_STEPS.map((s, i) => `<div class="tab ${i === 0 ? "active" : ""}" data-target="sec-${s.key}">${s.label}</div>`).join("")}
         </div>
+        <p class="flex items-center gap-1.5 text-[12px] text-[#727284] mt-2.5"><span class="text-[#98a2b3]">${I.info}</span> Review all tabs to see complete hazard information.</p>
       </div>
       <div id="drawer-body" class="nice-scroll flex-1 overflow-y-auto px-6 py-5 space-y-7"></div>
     </div>`, { drawer: true });
