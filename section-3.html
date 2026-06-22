@@ -36,7 +36,7 @@
 
     <!-- table card -->
     <section class="anim-fade-up delay-1 mt-5 border border-[#e2e5e9] rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col" style="min-height: calc(100vh - 240px);">
-      <div class="grid grid-cols-[1.4fr_1fr_.7fr_.7fr_1.5fr_1.1fr_84px] gap-2 items-center bg-[#f7f8fa] border-b border-[#e2e5e9] px-5 py-3 text-[14px] font-medium text-[#6a7282]">
+      <div class="grid grid-cols-[1.3fr_1fr_.6fr_.6fr_1.5fr_1fr_136px] gap-2 items-center bg-[#f7f8fa] border-b border-[#e2e5e9] px-5 py-3 text-[14px] font-medium text-[#6a7282]">
         <span>Chemical Name</span><span>CAS ID</span><span>Actual %</span><span>PDF %</span><span>Hazard Code</span><span>Created</span><span></span>
       </div>
 
@@ -56,7 +56,7 @@
       <!-- footer -->
       <div id="table-footer" class="border-t border-[#e2e5e9] bg-white px-5 py-4 items-center justify-between" style="display:none">
         <p class="text-[15px]"><span class="font-semibold text-[#1f1f26]" id="chem-count">0 chemicals added</span> <span class="text-[#98989b]">· Ready to generate</span></p>
-        <button id="generate-btn" class="btn-primary" onclick="openMixtureState()">Generate Final Hazard <span id="flask-ic"></span></button>
+        <button id="generate-btn" class="btn-primary" onclick="openMixtureState()">Generate Hazard Code <span id="flask-ic"></span></button>
       </div>
     </section>
   </main>
@@ -85,15 +85,15 @@ function renderTable() {
   document.getElementById("chem-rows").innerHTML = rows.map((c, idx) => {
     const created = fmtCreated(c.createdAt);
     return `
-    <div class="tbl-row anim-row-in grid grid-cols-[1.4fr_1fr_.7fr_.7fr_1.5fr_1.1fr_84px] gap-2 items-center px-5 py-4 border-b border-[#eef0f3] text-[14px]" data-id="${c.id}">
+    <div class="tbl-row anim-row-in grid grid-cols-[1.3fr_1fr_.6fr_.6fr_1.5fr_1fr_136px] gap-2 items-center px-5 py-4 border-b border-[#eef0f3] text-[14px]" data-id="${c.id}">
       <span class="font-medium text-[#45454d]">${esc(c.name)}</span>
       <span class="font-semibold text-[#45454d]">${esc(c.cas)}</span>
       <span class="font-medium text-[#45454d]">${esc(c.actual)}</span>
       <span class="font-medium text-[#45454d]">${esc(c.pdf)}</span>
       <span class="flex flex-wrap gap-1.5">${c.hcodes.slice(0, 6).map((h) => hzBadge(h.code, h.tone)).join("")}</span>
       <span><span class="block text-[#45454d]">${created.date}</span><span class="block text-[12px] text-[#727284]">${created.time}</span></span>
-      <span class="flex items-center justify-end gap-1">
-        <button class="icon-btn" title="Edit" onclick="openDrawer('${c.id}')">${I.pencil}</button>
+      <span class="flex items-center justify-end gap-2">
+        <button class="inline-flex items-center gap-1.5 border border-[#d0d5dd] rounded-lg px-3 py-1.5 text-[13px] font-medium text-[#344054] hover:border-[#5c67f9] hover:text-[#5c67f9] hover:bg-[#f6f6ff] transition-all" title="Edit" onclick="openDrawer('${c.id}')">${I.pencil} Edit</button>
         <button class="icon-btn danger" title="Delete" onclick="removeChemical('${c.id}')">${I.trash}</button>
       </span>
     </div>`;
@@ -116,8 +116,8 @@ function renderFinalHazardPanel() {
 
   // footer button reflects whether a hazard code already exists
   genBtn.innerHTML = saved
-    ? `Regenerate Final Hazard <span>${I.flask}</span>`
-    : `Generate Final Hazard <span>${I.flask}</span>`;
+    ? `Regenerate Hazard Code <span>${I.flask}</span>`
+    : `Generate Hazard Code <span>${I.flask}</span>`;
   genBtn.setAttribute("onclick", saved ? "openRegenerateModal()" : "openMixtureState()");
 
   if (!saved) { panel.style.display = "none"; return; }
@@ -271,7 +271,7 @@ function openAddChemical() {
           <h4 class="text-[18px] font-semibold text-[#3f43af]">Chemical List</h4>
           <button class="btn-secondary !py-2 !text-[12px]">${I.preset} Select Preset</button>
         </div>
-        <label class="lbl">CAS Number or Chemical Name</label>
+        <label class="lbl">CAS Number or Chemical Name<span class="text-[#f04438] ml-1">*</span></label>
         <div class="relative">
           <input id="cas-input" class="field" placeholder="e.g., 7664-93-9" autocomplete="off" />
         </div>

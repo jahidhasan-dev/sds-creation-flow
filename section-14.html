@@ -41,8 +41,8 @@
           <div>
             <label class="lbl" for="unid">UN/ID Number</label>
             <div class="relative">
-              <input id="unid" class="field pr-11" placeholder="e.g,1090" autocomplete="off" />
-              <button type="button" class="absolute right-1.5 top-1/2 -translate-y-1/2 icon-btn !p-2 border border-[#e2e5e9] rounded-full bg-white" onclick="lookupUN()" title="Search UN database"><span id="search-ic"></span></button>
+              <input id="unid" class="field pr-[52px]" placeholder="e.g., 1090" autocomplete="off" />
+              <button type="button" id="unid-search" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg border border-[#d0d5dd] bg-white text-[#727284] flex items-center justify-center hover:border-[#5c67f9] hover:text-[#5c67f9] hover:bg-[#f6f6ff] transition-colors" onclick="lookupUN()" title="Search UN database"><span id="search-ic" class="flex items-center justify-center"></span></button>
             </div>
           </div>
           <div>
@@ -51,7 +51,7 @@
           </div>
           <div class="md:col-span-2">
             <label class="lbl" for="shipping">Shipping Name</label>
-            <input id="shipping" class="field" placeholder="CHARGES, DEPTH†" autocomplete="off" />
+            <input id="shipping" class="field" placeholder="e.g., ACETONE" autocomplete="off" />
           </div>
         </div>
       </section>
@@ -62,16 +62,16 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
           <div>
             <label class="lbl" for="subrisk">Sub Risk</label>
-            <textarea id="subrisk" class="field" placeholder="Enter sub risk info...."></textarea>
+            <textarea id="subrisk" class="field" placeholder="e.g., 6.1 (Toxic)"></textarea>
           </div>
           <div>
             <label class="lbl" for="packing">Packaging Group</label>
-            <textarea id="packing" class="field" placeholder="Enter packaging group info....."></textarea>
+            <textarea id="packing" class="field" placeholder="e.g., Packing Group II"></textarea>
           </div>
           <div class="md:col-span-2">
-            <label class="lbl" for="mode">Transport Mode</label>
+            <label class="lbl" for="mode">Transport Mode <span class="text-[#f04438]" id="mode-star" style="display:none">*</span></label>
             <select id="mode" class="field placeholder">
-              <option value="" disabled selected hidden>Select Transport Mode...</option>
+              <option value="" disabled selected hidden>e.g., ROAD (ADR)</option>
             </select>
           </div>
         </div>
@@ -103,7 +103,17 @@ TRANSPORT_MODES.forEach((m) => {
   mode.appendChild(o);
 });
 mode.classList.toggle("placeholder", !mode.value);
-mode.addEventListener("change", () => mode.classList.remove("placeholder"));
+mode.addEventListener("change", () => { mode.classList.remove("placeholder", "field-error"); });
+
+// Transport Mode becomes required once a UN/ID number is entered
+const unidEl = document.getElementById("unid");
+const modeStar = document.getElementById("mode-star");
+function syncModeRequired() {
+  const required = !!unidEl.value.trim() && !toggle.checked;
+  modeStar.style.display = required ? "inline" : "none";
+  if (!required) mode.classList.remove("field-error");
+}
+unidEl.addEventListener("input", syncModeRequired);
 
 /* not-dangerous toggle disables transport fields */
 const toggle = document.getElementById("not-dangerous");
@@ -117,19 +127,21 @@ function applyToggle(animate) {
   });
   if (animate) toast(off ? "Marked as not dangerous for transport — fields disabled" : "Transport classification re-enabled");
 }
-toggle.addEventListener("change", () => applyToggle(true));
+toggle.addEventListener("change", () => { applyToggle(true); syncModeRequired(); });
 applyToggle(false);
+syncModeRequired();
 
 /* UN lookup */
 function lookupUN() {
   const el = document.getElementById("unid");
   const q = el.value.trim();
   if (!q) { el.classList.add("field-error"); el.focus(); return; }
-  const btn = el.parentElement.querySelector("button");
-  btn.innerHTML = Loader.diamond("sm");
+  const btn = document.getElementById("unid-search");
+  btn.innerHTML = `<span class="spinner !w-4 !h-4"></span>`;
   setTimeout(() => {
-    btn.innerHTML = `<span>${I.search}</span>`;
+    btn.innerHTML = `<span id="search-ic" class="flex items-center justify-center">${I.search}</span>`;
     const hit = UN_DB[q];
+    syncModeRequired();
     if (!hit) { toast(`No UN entry found for “${q}” — try 1090, 1830, 1789 or 1824`, "warn"); return; }
     const cd = document.getElementById("classdiv");
     const sh = document.getElementById("shipping");
@@ -145,6 +157,13 @@ document.getElementById("unid").addEventListener("keydown", (e) => { if (e.key =
 /* generate SDS */
 document.getElementById("s14-form").addEventListener("submit", (e) => {
   e.preventDefault();
+  // Transport Mode is required when a UN/ID is provided (and product is dangerous for transport)
+  if (!toggle.checked && document.getElementById("unid").value.trim() && !mode.value) {
+    mode.classList.add("field-error");
+    mode.scrollIntoView({ behavior: "smooth", block: "center" });
+    toast("Please select a Transport Mode for this UN/ID number", "warn");
+    return;
+  }
   Object.assign(State.data.section14, {
     unid: document.getElementById("unid").value,
     classdiv: document.getElementById("classdiv").value,

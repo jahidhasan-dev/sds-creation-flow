@@ -51,6 +51,11 @@ const I = {
   fileText: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>`,
   preset: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 14h5l1.5 2h3L15 14h5"/></svg>`,
   help: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 0 1 5.1.8c0 1.7-2.6 2.2-2.6 3.6"/><path d="M12 17v.05"/></svg>`,
+  info: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.05"/></svg>`,
+  building: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="11" height="18" rx="1.5"/><path d="M15 8h4a1.5 1.5 0 0 1 1.5 1.5V21"/><path d="M7.5 7h3M7.5 11h3M7.5 15h3"/><path d="M18 12v.01M18 16v.01"/></svg>`,
+  pin: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>`,
+  image: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="m4 17 4.5-4.5L12 16l3-3 5 5"/></svg>`,
+  phone: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 4h3l1.5 4-2 1.5a12 12 0 0 0 5 5l1.5-2 4 1.5v3a1.5 1.5 0 0 1-1.6 1.5C12.6 22.6 4 14 3.9 5.6A1.5 1.5 0 0 1 5.4 4Z"/></svg>`,
   arrowLeft: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>`,
   emptyDoc: `<svg width="74" height="64" viewBox="0 0 74 64" fill="none"><rect x="12" y="6" width="44" height="52" rx="6" fill="#e8ebf2"/><rect x="20" y="2" width="44" height="52" rx="6" fill="#f2f4f9"/><rect x="27" y="12" width="22" height="3.5" rx="1.75" fill="#cfd6e4"/><rect x="27" y="20" width="30" height="3.5" rx="1.75" fill="#dde2ed"/><rect x="27" y="28" width="26" height="3.5" rx="1.75" fill="#dde2ed"/><circle cx="42" cy="44" r="9" fill="#8b93fb"/><path d="M42 40v8M38 44h8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>`,
 };
@@ -432,6 +437,59 @@ function attachCodeSuggest(input, onPick) {
       }
     }
   });
+}
+
+/* ---------- unit field (input + inline unit dropdown) ---------- */
+// units: [{label, sym}]; opts: { placeholder, value, unit }
+// returns { html, mount(rootEl) } — call mount after inserting html
+function unitField(id, units, opts = {}) {
+  const html = `
+    <div class="unit-field" id="uf-wrap-${id}">
+      <input id="${id}" class="uf-input" placeholder="${esc(opts.placeholder || "e.g., 1.0")}" value="${esc(opts.value || "")}" autocomplete="off" />
+      <span class="uf-symbol" id="${id}-sym">${opts.unit ? esc((units.find((u) => u.label === opts.unit) || {}).sym || "") : ""}</span>
+      <span class="uf-sep"></span>
+      <button type="button" class="uf-btn ${opts.unit ? "has-unit" : ""}" id="${id}-btn">
+        <span id="${id}-lbl">${opts.unit ? esc(opts.unit) : "Select Unit"}</span> ${I.chevron}
+      </button>
+      <div class="unit-menu" id="${id}-menu" hidden>
+        ${units.map((u) => `
+          <div class="um-item ${opts.unit === u.label ? "sel" : ""}" data-label="${esc(u.label)}" data-sym="${esc(u.sym)}">
+            <span class="um-glyph">${esc(u.sym)}</span><span>${esc(u.label)}</span><span class="um-check">${I.check}</span>
+          </div>`).join("")}
+      </div>
+    </div>`;
+  const mount = () => {
+    const wrap = document.getElementById(`uf-wrap-${id}`);
+    const input = document.getElementById(id);
+    const btn = document.getElementById(`${id}-btn`);
+    const menu = document.getElementById(`${id}-menu`);
+    const lbl = document.getElementById(`${id}-lbl`);
+    const sym = document.getElementById(`${id}-sym`);
+    input.addEventListener("focus", () => wrap.classList.add("focus"));
+    input.addEventListener("blur", () => wrap.classList.remove("focus"));
+    const close = () => { menu.hidden = true; document.removeEventListener("mousedown", onDoc); };
+    const onDoc = (e) => { if (!menu.contains(e.target) && e.target !== btn && !btn.contains(e.target)) close(); };
+    btn.addEventListener("click", () => {
+      if (menu.hidden) { menu.hidden = false; setTimeout(() => document.addEventListener("mousedown", onDoc), 0); }
+      else close();
+    });
+    menu.querySelectorAll(".um-item").forEach((it) =>
+      it.addEventListener("click", () => {
+        menu.querySelectorAll(".um-item").forEach((x) => x.classList.remove("sel"));
+        it.classList.add("sel");
+        lbl.textContent = it.dataset.label;
+        sym.textContent = it.dataset.sym;
+        btn.classList.add("has-unit");
+        close();
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      })
+    );
+  };
+  return { html, mount };
+}
+function unitFieldValue(id) {
+  const lbl = document.getElementById(`${id}-lbl`);
+  return { value: document.getElementById(id).value, unit: lbl && lbl.textContent !== "Select Unit" ? lbl.textContent : "" };
 }
 
 /* ---------- branded loaders ---------- */

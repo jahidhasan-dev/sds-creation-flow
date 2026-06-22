@@ -35,29 +35,35 @@
         <h3 class="text-[18px] font-semibold text-[#3f43af] mb-5">Product Information</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
           <div>
-            <label class="lbl" for="productName">Product Name</label>
+            <label class="lbl" for="productName">Product Name <span class="text-[#f04438]">*</span></label>
             <input id="productName" class="field" placeholder="e.g., XZ-10C" autocomplete="off" />
           </div>
           <div>
             <div class="flex items-center justify-between mb-1.5">
-              <label class="lbl !mb-0" for="companyName">Company Name</label>
+              <label class="lbl !mb-0" for="companyName">Company Name <span class="text-[#f04438]">*</span></label>
               <button type="button" class="text-[12px] font-medium text-[#344054] hover:text-[#5c67f9] transition-colors flex items-center gap-1" onclick="addCompany()">Add Company <span class="text-[14px] leading-none">+</span></button>
             </div>
-            <select id="companyName" class="field placeholder">
-              <option value="" disabled selected hidden>e.g., ExactSDS Inc.</option>
+            <select id="companyName" class="field" required>
+              <option value="" disabled hidden>e.g., ExactSDS Inc.</option>
             </select>
           </div>
           <div>
-            <label class="lbl" for="formulation">Formulation Number / Product Code</label>
-            <input id="formulation" class="field" placeholder="e.g., PC-12345" autocomplete="off" />
+            <label class="lbl" for="formulation">Formulation Number</label>
+            <input id="formulation" class="field" placeholder="e.g., 12345" autocomplete="off" />
+          </div>
+          <div>
+            <label class="lbl" for="productCode">Product Code</label>
+            <input id="productCode" class="field" placeholder="e.g., PC-12345" autocomplete="off" />
           </div>
           <div>
             <label class="lbl" for="versionNumber">Version Number</label>
-            <input id="versionNumber" class="field" placeholder="e.g., 1.0" autocomplete="off" />
+            <input id="versionNumber" class="field" placeholder="e.g., V-1" autocomplete="off" />
           </div>
-          <div class="md:col-span-2">
-            <label class="lbl" for="synonyms">Synonyms</label>
-            <input id="synonyms" class="field" placeholder="write here..." autocomplete="off" />
+          <div>
+            <label class="lbl flex items-center gap-1.5" for="synonyms">Synonyms
+              <span class="tip text-[#98a2b3]" id="syn-info"></span>
+            </label>
+            <input id="synonyms" class="field" placeholder="e.g., Dihydrogen monoxide, Aqua" autocomplete="off" />
           </div>
         </div>
       </section>
@@ -85,12 +91,18 @@
             </select>
           </div>
           <div>
-            <label class="lbl" for="uses">Uses</label>
-            <textarea id="uses" class="field" placeholder="write here...."></textarea>
+            <label class="lbl flex items-center gap-1.5" for="uses">Uses
+              <span class="tip text-[#98a2b3]" id="uses-info"></span>
+            </label>
+            <textarea id="uses" class="field" placeholder="e.g., Industrial cleaning agent; laboratory reagent"></textarea>
           </div>
           <div>
             <label class="lbl" for="emergency">Emergency Contact</label>
-            <textarea id="emergency" class="field" placeholder="write here...."></textarea>
+            <textarea id="emergency" class="field" placeholder="e.g., CHEMTREC +1-800-424-9300 (24h)"></textarea>
+          </div>
+
+          <div class="md:col-span-2 -mb-1">
+            <label class="lbl !mb-0">Product Type <span class="text-[#f04438]">*</span></label>
           </div>
 
           <!-- hazard choice -->
@@ -132,6 +144,10 @@
 <script>
 renderShell({ step: 0, header: "breadcrumb", crumb: "Product Details", tutorial: "1" });
 
+// info-icon tooltips
+document.getElementById("syn-info").innerHTML = `${I.info}<span class="tip-pop">Other names this product is sold or referred to under.</span>`;
+document.getElementById("uses-info").innerHTML = `${I.info}<span class="tip-pop">Identified uses or recommended applications for the product.</span>`;
+
 // populate selects
 function fillSelect(id, items, selected) {
   const el = document.getElementById(id);
@@ -145,15 +161,17 @@ function fillSelect(id, items, selected) {
   el.addEventListener("change", () => el.classList.remove("placeholder"));
 }
 const s1 = State.data.section1;
-fillSelect("companyName", COMPANIES, s1.company);
+// Company defaults to the first option unless a different one was saved
+fillSelect("companyName", COMPANIES, s1.company || COMPANIES[0]);
 fillSelect("country", COUNTRIES, s1.country);
 fillSelect("language", LANGUAGES, s1.language);
 fillSelect("regulation", REGULATIONS, s1.regulation);
 
-// restore saved values
-["productName","formulation","versionNumber","synonyms","uses","emergency"].forEach((id) => {
+// restore saved values; Version Number defaults to "V-1"
+["productName","formulation","productCode","versionNumber","synonyms","uses","emergency"].forEach((id) => {
   if (s1[id]) document.getElementById(id).value = s1[id];
 });
+if (!s1.versionNumber) document.getElementById("versionNumber").value = "V-1";
 if (s1.hazard) {
   const card = document.querySelector(`[data-hazard="${s1.hazard}"]`);
   card && card.classList.add("selected");
@@ -165,27 +183,106 @@ function pickHazard(el) {
 }
 
 function addCompany() {
+  const secHead = (icon, title) => `<div class="flex items-center gap-2 text-[#1f1f26]"><span class="text-[#5c67f9]">${icon}</span><h4 class="text-[15px] font-semibold">${title}</h4></div>`;
+  const field = (label, id, ph, { req = false } = {}) => `
+    <div>
+      <label class="lbl" for="${id}">${label}${req ? ' <span class="text-[#f04438]">*</span>' : ""}</label>
+      <input id="${id}" class="field" placeholder="${ph}" autocomplete="off" />
+    </div>`;
   const ov = openOverlay(`
-    <div class="modal bg-white rounded-2xl shadow-2xl w-[420px] p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-[18px] font-medium text-[#1f1f26]">Add Company</h3>
-        <button class="icon-btn" onclick="closeOverlay(this.closest('.overlay'))">${I.x}</button>
+    <div class="modal bg-white rounded-2xl shadow-2xl w-[880px] max-w-[95vw] max-h-[90vh] flex flex-col overflow-hidden">
+      <header class="flex items-start justify-between px-7 py-5 border-b border-[#eef0f3] shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-[#5c67f9] text-white flex items-center justify-center">${I.building}</div>
+          <div>
+            <h3 class="text-[18px] font-semibold text-[#1f1f26]">Add New Company</h3>
+            <p class="text-[13px] text-[#727284]">Add the company that appears on this SDS.</p>
+          </div>
+        </div>
+        <button class="icon-btn !p-2.5 border border-[#e2e5e9] rounded-xl" onclick="closeOverlay(this.closest('.overlay'))">${I.x}</button>
+      </header>
+
+      <div class="nice-scroll flex-1 overflow-y-auto px-7 py-6 grid grid-cols-1 lg:grid-cols-[1fr_290px] gap-7">
+        <!-- left column -->
+        <div class="space-y-5 lg:pr-7 lg:border-r border-[#eef0f3]">
+          ${secHead(I.building, "Company Information")}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
+            ${field("Company Name", "co-name", "e.g., ExactSDS Inc.", { req: true })}
+            <div>
+              <label class="lbl" for="co-website">Website</label>
+              <div class="flex items-stretch border border-[#d0d5dd] rounded-[10px] overflow-hidden focus-within:border-[#5c67f9] focus-within:ring-4 focus-within:ring-[#5c67f9]/10 transition-all">
+                <span class="flex items-center px-3 text-[14px] text-[#727284] bg-[#f8f9fa] border-r border-[#e2e5e9]">https://</span>
+                <input id="co-website" class="flex-1 min-w-0 px-3 py-2.5 text-[14px] text-[#1f1f26] outline-none" placeholder="www.example.com" autocomplete="off" />
+              </div>
+            </div>
+            ${field("Email", "co-email", "e.g., safety@exactsds.com")}
+            ${field("Telephone", "co-phone", "e.g., +1 555 0100")}
+          </div>
+
+          <div class="pt-1">${secHead(I.pin, "Address")}</div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
+            ${field("Country", "co-country", "e.g., United States")}
+            ${field("State / Region", "co-state", "e.g., California")}
+            <div class="md:col-span-2">
+              <label class="lbl" for="co-street">Street</label>
+              <input id="co-street" class="field" placeholder="e.g., 123 Market Street" autocomplete="off" />
+            </div>
+            ${field("City/Suburb", "co-city", "e.g., San Francisco")}
+            ${field("Postcode", "co-postcode", "e.g., 94105")}
+          </div>
+
+          <div class="pt-1">${secHead(I.shieldCheck, "UFI identity")}</div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-x-5 gap-y-4">
+            <div>
+              <label class="lbl" for="co-vatc">VAT country (ISO)</label>
+              <select id="co-vatc" class="field placeholder">
+                <option value="" disabled selected hidden>Select Country</option>
+                ${["US","GB","DE","FR","NO","SE","NL","JP"].map((c) => `<option>${c}</option>`).join("")}
+              </select>
+            </div>
+            ${field("VAT number", "co-vat", "e.g., US123456789")}
+            ${field("Company key", "co-key", "e.g., 12345")}
+          </div>
+        </div>
+
+        <!-- right column -->
+        <div class="space-y-6">
+          ${secHead(I.image, "Branding")}
+          <div class="flex items-start gap-3.5">
+            <div class="w-[58px] h-[58px] rounded-xl bg-[#1f2430] text-[#9aa0ab] flex items-center justify-center shrink-0">${I.image}</div>
+            <div>
+              <p class="text-[15px] font-semibold text-[#1f1f26]">Upload your Logo</p>
+              <p class="text-[12px] text-[#727284] mt-0.5">Min 32×32px, SVG, PNG or JPEG</p>
+              <div class="flex items-center gap-2 mt-2.5">
+                <button class="inline-flex items-center justify-center text-[13px] font-medium text-[#d92d20] border border-[#fda29b] rounded-lg px-3 py-1.5 hover:bg-[#fef3f2] transition-colors" onclick="toast('Logo removed')">Remove</button>
+                <button class="inline-flex items-center justify-center text-[13px] font-medium text-[#344054] border border-[#d0d5dd] rounded-lg px-3 py-1.5 hover:border-[#5c67f9] hover:text-[#5c67f9] transition-colors" onclick="toast('Demo: file picker would open')">Change</button>
+              </div>
+            </div>
+          </div>
+          <div class="border-t border-[#eef0f3]"></div>
+          ${secHead(I.phone, "Emergency contacts")}
+          ${field("Emergency telephone", "co-emergency", "e.g., +1 800 424 9300")}
+        </div>
       </div>
-      <label class="lbl">Company Name</label>
-      <input id="new-company" class="field" placeholder="e.g., ExactSDS Inc." />
-      <button class="btn-primary w-full mt-5" onclick="saveCompany(this)">Add Company</button>
+
+      <footer class="flex items-center justify-between px-7 py-4 border-t border-[#eef0f3] shrink-0">
+        <button class="btn-secondary !py-2.5 !px-6" onclick="closeOverlay(this.closest('.overlay'))">${I.x} Cancel</button>
+        <button class="btn-primary !py-2.5 !px-7" onclick="saveCompany(this)">${I.plus} Create</button>
+      </footer>
     </div>`);
-  setTimeout(() => ov.querySelector("#new-company").focus(), 80);
+  setTimeout(() => ov.querySelector("#co-name").focus(), 80);
+  ov.querySelector("#co-name").addEventListener("input", (e) => e.target.classList.remove("field-error"));
 }
 function saveCompany(btn) {
-  const input = document.getElementById("new-company");
+  const input = document.getElementById("co-name");
   const name = input.value.trim();
-  if (!name) { input.classList.add("field-error"); input.focus(); return; }
+  if (!name) { input.classList.add("field-error"); input.focus(); toast("Company Name is required", "warn"); return; }
   const sel = document.getElementById("companyName");
-  const o = document.createElement("option");
-  o.value = o.textContent = name; o.selected = true;
-  sel.appendChild(o);
-  sel.classList.remove("placeholder");
+  // reuse existing option if the name already exists
+  let opt = [...sel.options].find((o) => o.value === name);
+  if (!opt) { opt = document.createElement("option"); opt.value = opt.textContent = name; sel.appendChild(opt); }
+  opt.selected = true;
+  sel.classList.remove("placeholder", "field-error");
   closeOverlay(btn.closest(".overlay"));
   toast(`Company “${name}” added`, "success");
 }
@@ -194,7 +291,7 @@ document.getElementById("s1-form").addEventListener("submit", (e) => {
   e.preventDefault();
   // validate requireds
   let ok = true;
-  ["country","language","regulation"].forEach((id) => {
+  ["companyName","country","language","regulation"].forEach((id) => {
     const el = document.getElementById(id);
     el.classList.toggle("field-error", !el.value);
     if (!el.value) ok = false;
@@ -203,7 +300,7 @@ document.getElementById("s1-form").addEventListener("submit", (e) => {
   pn.classList.toggle("field-error", !pn.value.trim());
   if (!pn.value.trim()) ok = false;
   if (!document.querySelector(".choice-card.selected")) {
-    toast("Please choose Hazardous or Non-Hazardous", "warn");
+    toast("Please choose a Product Type (Hazardous or Non-Hazardous)", "warn");
     ok = false;
   }
   if (!ok) { toast("Please fill in the required fields", "warn"); return; }
@@ -212,6 +309,7 @@ document.getElementById("s1-form").addEventListener("submit", (e) => {
     productName: pn.value.trim(),
     company: document.getElementById("companyName").value,
     formulation: document.getElementById("formulation").value,
+    productCode: document.getElementById("productCode").value,
     versionNumber: document.getElementById("versionNumber").value,
     synonyms: document.getElementById("synonyms").value,
     country: document.getElementById("country").value,

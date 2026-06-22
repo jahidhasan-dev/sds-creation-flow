@@ -509,6 +509,48 @@ select.field:invalid, select.field.placeholder { color: var(--placeholder); }
 }
 
 /* ============================================================
+   Unit field (input + inline "Select Unit" dropdown) — Section 9
+   ============================================================ */
+.unit-field {
+  display: flex; align-items: stretch;
+  border: 1px solid var(--input-border);
+  border-radius: 10px; background: #fff;
+  transition: border-color .2s, box-shadow .2s;
+  overflow: visible; position: relative;
+}
+.unit-field:hover { border-color: #b9c0f9; }
+.unit-field.focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(92,103,249,.12); }
+.unit-field .uf-input {
+  flex: 1; min-width: 0; border: none; outline: none; background: transparent;
+  padding: 10px 6px 10px 14px; font-size: 14px; color: var(--ink); border-radius: 10px 0 0 10px;
+}
+.unit-field .uf-input::placeholder { color: var(--placeholder); }
+.unit-field .uf-symbol { display: flex; align-items: center; padding-right: 8px; color: var(--muted); font-size: 14px; font-weight: 600; white-space: nowrap; }
+.unit-field .uf-sep { width: 1px; background: var(--border); margin: 8px 0; }
+.unit-field .uf-btn {
+  display: flex; align-items: center; gap: 6px; padding: 0 14px;
+  font-size: 14px; color: var(--muted); white-space: nowrap; cursor: pointer;
+  border-radius: 0 10px 10px 0; transition: background .15s, color .15s;
+}
+.unit-field .uf-btn:hover { background: var(--bg-soft); color: var(--ink); }
+.unit-field .uf-btn.has-unit { color: var(--ink); font-weight: 500; }
+.unit-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; min-width: 190px;
+  background: #fff; border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(16,24,40,.14); padding: 6px; z-index: 60;
+  animation: suggestIn .2s cubic-bezier(.21,.8,.35,1) both;
+}
+.unit-menu .um-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px;
+  font-size: 14px; color: var(--ink); cursor: pointer; transition: background .15s;
+}
+.unit-menu .um-item:hover { background: #f6f6ff; }
+.unit-menu .um-item .um-glyph { width: 22px; text-align: center; color: var(--muted); font-weight: 600; }
+.unit-menu .um-item .um-check { margin-left: auto; color: var(--primary); opacity: 0; }
+.unit-menu .um-item.sel .um-check { opacity: 1; }
+.unit-menu .um-item.sel { color: var(--primary); font-weight: 600; }
+
+/* ============================================================
    H-code suggestion dropdown
    ============================================================ */
 @keyframes suggestIn { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }

@@ -28,7 +28,7 @@
     </div>
 
     <form id="s9-form" class="anim-fade-up delay-1 mt-5 border border-[#e2e5e9] rounded-2xl bg-[#f8f9fa] p-6" novalidate>
-      <h3 class="text-[18px] font-semibold text-[#3f43af] mb-5">Product Information</h3>
+      <h3 class="text-[18px] font-semibold text-[#3f43af] mb-5 flex items-center gap-2">Product Information <span class="text-[#98a2b3]" id="pi-info"></span></h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
         <div>
           <label class="lbl">State</label>
@@ -39,21 +39,21 @@
         </div>
         <div>
           <label class="lbl" for="ph">pH</label>
-          <input id="ph" class="field" placeholder="e.g., 7" autocomplete="off" />
+          <div id="uf-ph"></div>
         </div>
         <div>
           <label class="lbl" for="solubility">Water Solubility</label>
           <select id="solubility" class="field placeholder">
-            <option value="" disabled selected hidden>Select a water solubility...</option>
+            <option value="" disabled selected hidden>e.g., Fully miscible in water</option>
           </select>
         </div>
         <div>
           <label class="lbl" for="density">SG/Density</label>
-          <input id="density" class="field" placeholder="e.g., 1.0" autocomplete="off" />
+          <div id="uf-density"></div>
         </div>
         <div class="md:col-span-2">
           <label class="lbl" for="flash">Flash Point</label>
-          <input id="flash" class="field" placeholder="write here..." autocomplete="off" />
+          <div id="uf-flash"></div>
         </div>
       </div>
 
@@ -78,6 +78,7 @@
 renderShell({ step: 2, header: "welcome", tutorial: "9" });
 document.getElementById("lock-ic").innerHTML = I.lock;
 document.getElementById("plus-ic").innerHTML = I.plus;
+document.getElementById("pi-info").innerHTML = `<span class="tip">${I.info}<span class="tip-pop">Physical & chemical properties of the finished product. Pick a unit for each value.</span></span>`;
 
 const s9 = State.data.section9;
 
@@ -94,7 +95,18 @@ SOLUBILITIES.forEach((s) => {
 sol.classList.toggle("placeholder", !sol.value);
 sol.addEventListener("change", () => sol.classList.remove("placeholder"));
 
-["ph", "density", "flash"].forEach((id) => { if (s9[id]) document.getElementById(id).value = s9[id]; });
+// per-field unit options (symbol shown after the value once chosen)
+const TEMP_UNITS = [{ label: "Celsius", sym: "°C" }, { label: "Degree", sym: "°" }, { label: "Fahrenheit", sym: "°F" }];
+const DENSITY_UNITS = [{ label: "g/cm³", sym: "g/cm³" }, { label: "kg/m³", sym: "kg/m³" }, { label: "g/mL", sym: "g/mL" }];
+const FLASH_UNITS = [{ label: "Celsius", sym: "°C" }, { label: "Fahrenheit", sym: "°F" }, { label: "Kelvin", sym: "K" }];
+
+const phUF = unitField("ph", TEMP_UNITS, { placeholder: "e.g., 7.0", value: s9.ph, unit: s9.ph_unit });
+const densityUF = unitField("density", DENSITY_UNITS, { placeholder: "e.g., 1.84", value: s9.density, unit: s9.density_unit });
+const flashUF = unitField("flash", FLASH_UNITS, { placeholder: "e.g., 60", value: s9.flash, unit: s9.flash_unit });
+document.getElementById("uf-ph").innerHTML = phUF.html;
+document.getElementById("uf-density").innerHTML = densityUF.html;
+document.getElementById("uf-flash").innerHTML = flashUF.html;
+phUF.mount(); densityUF.mount(); flashUF.mount();
 
 /* dynamic extra properties */
 let extraProps = s9.extra || [];
@@ -123,12 +135,13 @@ renderExtras();
 
 document.getElementById("s9-form").addEventListener("submit", (e) => {
   e.preventDefault();
+  const ph = unitFieldValue("ph"), density = unitFieldValue("density"), flash = unitFieldValue("flash");
   Object.assign(State.data.section9, {
     state: document.getElementById("state").value,
-    ph: document.getElementById("ph").value,
+    ph: ph.value, ph_unit: ph.unit,
     solubility: sol.value,
-    density: document.getElementById("density").value,
-    flash: document.getElementById("flash").value,
+    density: density.value, density_unit: density.unit,
+    flash: flash.value, flash_unit: flash.unit,
     extra: extraProps.filter((p) => p.name.trim() || p.value.trim()),
   });
   markStepSaved("physical");
@@ -146,9 +159,9 @@ document.getElementById("s9-form").addEventListener("submit", (e) => {
 // ----- unsaved-changes guard -----
 let formDirty = false;
 const markDirty = () => { formDirty = true; };
-document.querySelectorAll("#s9-form .field").forEach((f) => { f.addEventListener("input", markDirty); f.addEventListener("change", markDirty); });
-document.getElementById("extra-props").addEventListener("input", markDirty);
-document.querySelector('button[onclick="addProperty()"]').addEventListener("click", markDirty);
+// delegate on the form so unit inputs, selects, unit-dropdown changes and extras all count
+document.getElementById("s9-form").addEventListener("input", markDirty);
+document.getElementById("s9-form").addEventListener("change", markDirty);
 Nav.isDirty = () => formDirty;
 </script>
 </body>
